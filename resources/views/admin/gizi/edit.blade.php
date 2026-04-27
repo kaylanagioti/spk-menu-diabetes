@@ -1,42 +1,58 @@
-{{-- resources/views/admin/menu/edit.blade.php --}}
+{{-- resources/views/admin/gizi/edit.blade.php --}}
 @extends('admin.layout')
 
 @section('content')
-<h2 style="margin-bottom:20px">Edit Menu</h2>
+<h2 style="margin-bottom:6px">Kandungan Gizi</h2>
+<p style="color:#666; margin-bottom:20px; font-size:0.9rem">{{ $menu->nama_menu }}</p>
 
 <div class="card">
-    <form action="{{ route('admin.menu.update', [$menu, 'key' => request('key')]) }}" method="POST">
+    <form action="{{ route('admin.gizi.update', [$menu, 'key' => request('key')]) }}" method="POST">
         @csrf @method('PUT')
 
-        <label>Nama Menu</label>
-        <input type="text" name="nama_menu" value="{{ old('nama_menu', $menu->nama_menu) }}" required>
-        @error('nama_menu') <div class="error-msg">{{ $message }}</div> @enderror
+        <label>Energi (kkal)</label>
+        <input type="number" step="0.01" name="energi_kkal"
+               value="{{ old('energi_kkal', $gizi->energi_kkal) }}" required>
+        @error('energi_kkal') <div class="error-msg">{{ $message }}</div> @enderror
 
-        <label>Waktu Makan</label>
-        <select name="jenis_menu" required>
-            <option value="sarapan"     {{ old('jenis_menu', $menu->jenis_menu) == 'sarapan'     ? 'selected' : '' }}>Sarapan</option>
-            <option value="makan_siang" {{ old('jenis_menu', $menu->jenis_menu) == 'makan_siang' ? 'selected' : '' }}>Makan Siang</option>
-            <option value="makan_malam" {{ old('jenis_menu', $menu->jenis_menu) == 'makan_malam' ? 'selected' : '' }}>Makan Malam</option>
-        </select>
+        <label>Karbohidrat (gram)</label>
+        <input type="number" step="0.01" name="karbohidrat_gram"
+               value="{{ old('karbohidrat_gram', $gizi->karbohidrat_gram) }}" required>
+        @error('karbohidrat_gram') <div class="error-msg">{{ $message }}</div> @enderror
 
-        <label>Porsi (gram)</label>
-        <input type="number" step="0.1" name="porsi_gram" value="{{ old('porsi_gram', $menu->porsi_gram) }}" required>
+        <label>Protein (gram)</label>
+        <input type="number" step="0.01" name="protein_gram"
+               value="{{ old('protein_gram', $gizi->protein_gram) }}" required>
+        @error('protein_gram') <div class="error-msg">{{ $message }}</div> @enderror
 
-        <label>Deskripsi</label>
-        <textarea name="deskripsi" rows="3">{{ old('deskripsi', $menu->deskripsi) }}</textarea>
+        <label>Lemak (gram)</label>
+        <input type="number" step="0.01" name="lemak_gram"
+               value="{{ old('lemak_gram', $gizi->lemak_gram) }}" required>
+        @error('lemak_gram') <div class="error-msg">{{ $message }}</div> @enderror
 
-        <label>Sumber Resep</label>
-        <input type="text" name="sumber_resep" value="{{ old('sumber_resep', $menu->sumber_resep) }}">
+        <label>Serat (gram)</label>
+        <input type="number" step="0.01" name="serat_gram"
+               value="{{ old('serat_gram', $gizi->serat_gram) }}" required>
+        @error('serat_gram') <div class="error-msg">{{ $message }}</div> @enderror
 
-        <label>Status</label>
-        <select name="is_active">
-            <option value="1" {{ old('is_active', $menu->is_active) ? 'selected' : '' }}>Aktif</option>
-            <option value="0" {{ !old('is_active', $menu->is_active) ? 'selected' : '' }}>Nonaktif</option>
-        </select>
+        <label>Indeks Glikemik <small style="color:#999">(0–100, opsional)</small></label>
+        <input type="number" name="indeks_glikemik" min="0" max="100"
+               value="{{ old('indeks_glikemik', $gizi->indeks_glikemik) }}">
+        @error('indeks_glikemik') <div class="error-msg">{{ $message }}</div> @enderror
 
-        <a class="btn btn-gray" href="{{ route('admin.menu.index', ['key' => request('key')]) }}">Batal</a>
+        <label>Gula (gram, opsional)</label>
+        <input type="number" step="0.01" name="gula_gram"
+               value="{{ old('gula_gram', $gizi->gula_gram) }}">
+        @error('gula_gram') <div class="error-msg">{{ $message }}</div> @enderror
+
+        <label>Sumber Data <small style="color:#999">(opsional)</small></label>
+        <input type="text" name="sumber_data"
+               value="{{ old('sumber_data', $gizi->sumber_data) }}"
+               placeholder="Contoh: TKPI 2019, USDA">
+        @error('sumber_data') <div class="error-msg">{{ $message }}</div> @enderror
+
+        <a class="btn btn-gray" href="{{ route('admin.gizi.index', ['key' => request('key')]) }}">Batal</a>
         &nbsp;
-        <button class="btn btn-green" type="submit">Update</button>
+        <button class="btn btn-green" type="submit">Simpan Gizi</button>
     </form>
 </div>
 @endsection
