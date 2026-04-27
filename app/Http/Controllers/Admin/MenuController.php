@@ -31,7 +31,7 @@ class MenuController extends Controller
 
         Menu::create($request->only([
             'nama_menu', 'jenis_menu', 'porsi_gram',
-            'deskripsi', 'sumber_resep',
+            'deskripsi', 'sumber_resep', 'image_url',
         ]) + ['is_active' => true]);
 
         return redirect()
@@ -54,7 +54,7 @@ class MenuController extends Controller
 
         $menu->update($request->only([
             'nama_menu', 'jenis_menu', 'porsi_gram',
-            'deskripsi', 'sumber_resep', 'is_active',
+            'deskripsi', 'sumber_resep', 'is_active', 'image_url',
         ]));
 
         return redirect()

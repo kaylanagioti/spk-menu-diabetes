@@ -23,7 +23,13 @@
 
         <label>Porsi (gram)</label>
         <input type="number" step="0.1" name="porsi_gram" value="{{ old('porsi_gram') }}" required>
-        @error('porsi_gram') <div class="error-msg">{{ $message }}</div> @enderror
+
+        <label>URL Gambar <span style="font-weight:normal;color:#888">(opsional — gunakan link Unsplash atau gambar lain)</span></label>
+        <input type="text" name="image_url" value="{{ old('image_url') }}"
+               placeholder="https://images.unsplash.com/photo-xxx?w=400">
+        @if(old('image_url'))
+            <img src="{{ old('image_url') }}" style="width:120px;height:80px;object-fit:cover;border-radius:8px;margin-bottom:12px">
+        @endif
 
         <label>Deskripsi (opsional)</label>
         <textarea name="deskripsi" rows="3">{{ old('deskripsi') }}</textarea>

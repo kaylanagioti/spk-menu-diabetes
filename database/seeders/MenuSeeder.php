@@ -20,6 +20,7 @@ class MenuSeeder extends Seeder
                 'satuan_porsi' => 'gram',
                 'is_active'    => true,
                 'sumber_resep' => 'TKPI 2017',
+                'image_url'    => 'https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=400&q=80',
             ],
             [
                 'nama_menu'    => 'Bubur Ayam Tanpa Kerupuk',
@@ -29,6 +30,7 @@ class MenuSeeder extends Seeder
                 'satuan_porsi' => 'gram',
                 'is_active'    => true,
                 'sumber_resep' => 'TKPI 2017',
+                'image_url'    => 'https://images.unsplash.com/photo-1569050467447-ce54b3bbc37d?w=400&q=80',
             ],
             [
                 'nama_menu'    => 'Roti Gandum dengan Telur Dadar',
@@ -38,6 +40,7 @@ class MenuSeeder extends Seeder
                 'satuan_porsi' => 'gram',
                 'is_active'    => true,
                 'sumber_resep' => 'TKPI 2017',
+                'image_url'    => 'https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=400&q=80',
             ],
 
             // ── MAKAN SIANG ───────────────────────────────────────────
@@ -49,6 +52,7 @@ class MenuSeeder extends Seeder
                 'satuan_porsi' => 'gram',
                 'is_active'    => true,
                 'sumber_resep' => 'TKPI 2017',
+                'image_url'    => 'https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?w=400&q=80',
             ],
             [
                 'nama_menu'    => 'Nasi Merah dengan Tempe Kukus dan Tumis Kangkung',
@@ -58,6 +62,7 @@ class MenuSeeder extends Seeder
                 'satuan_porsi' => 'gram',
                 'is_active'    => true,
                 'sumber_resep' => 'TKPI 2017',
+                'image_url'    => 'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=400&q=80',
             ],
             [
                 'nama_menu'    => 'Nasi Merah dengan Ikan Kukus dan Brokoli',
@@ -67,6 +72,7 @@ class MenuSeeder extends Seeder
                 'satuan_porsi' => 'gram',
                 'is_active'    => true,
                 'sumber_resep' => 'TKPI 2017',
+                'image_url'    => 'https://images.unsplash.com/photo-1559847844-5315695dadae?w=400&q=80',
             ],
             [
                 'nama_menu'    => 'Nasi Merah dengan Tahu Bakar dan Sup Wortel',
@@ -76,6 +82,7 @@ class MenuSeeder extends Seeder
                 'satuan_porsi' => 'gram',
                 'is_active'    => true,
                 'sumber_resep' => 'TKPI 2017',
+                'image_url'    => 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&q=80',
             ],
 
             // ── MAKAN MALAM ───────────────────────────────────────────
@@ -87,6 +94,7 @@ class MenuSeeder extends Seeder
                 'satuan_porsi' => 'gram',
                 'is_active'    => true,
                 'sumber_resep' => 'TKPI 2017',
+                'image_url'    => 'https://images.unsplash.com/photo-1598103442097-8b74394b95c3?w=400&q=80',
             ],
             [
                 'nama_menu'    => 'Nasi Merah dengan Telur Rebus dan Sup Sayuran',
@@ -96,6 +104,7 @@ class MenuSeeder extends Seeder
                 'satuan_porsi' => 'gram',
                 'is_active'    => true,
                 'sumber_resep' => 'TKPI 2017',
+                'image_url'    => 'https://images.unsplash.com/photo-1547592180-85f173990554?w=400&q=80',
             ],
             [
                 'nama_menu'    => 'Nasi Merah dengan Tempe Bacem dan Sayur Asem',
@@ -105,6 +114,7 @@ class MenuSeeder extends Seeder
                 'satuan_porsi' => 'gram',
                 'is_active'    => true,
                 'sumber_resep' => 'TKPI 2017',
+                'image_url'    => 'https://images.unsplash.com/photo-1455619452474-d2be8b1e70cd?w=400&q=80',
             ],
         ];
 

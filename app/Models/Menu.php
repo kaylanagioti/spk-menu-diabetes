@@ -18,6 +18,7 @@ class Menu extends Model
         'nama_menu',
         'deskripsi',
         'gambar',
+        'image_url';
         'jenis_menu',
         'porsi_gram',
         'satuan_porsi',
