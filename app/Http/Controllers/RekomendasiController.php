@@ -3,22 +3,23 @@
 namespace App\Http\Controllers;
 
 use App\Models\Anak;
-use App\Models\Menu;
 use App\Models\Rekomendasi;
 use App\Services\AkgService;
 use App\Services\FuzzyAhpService;
+use App\Services\PaketHarianService;
 use Illuminate\Http\Request;
 
 class RekomendasiController extends Controller
 {
     public function __construct(
-        private AkgService      $akgService,
-        private FuzzyAhpService $fuzzyAhp
+        private AkgService         $akgService,
+        private FuzzyAhpService    $fuzzyAhp,
+        private PaketHarianService $paketService,
     ) {}
 
     /**
      * GET /rekomendasi
-     * Form input data anak + pilih waktu makan.
+     * Form input data anak.
      */
     public function index()
     {
@@ -28,89 +29,107 @@ class RekomendasiController extends Controller
     /**
      * POST /rekomendasi/proses
      *
-     * Alur:
-     * 1. Validasi + buat objek Anak sementara (tidak disimpan ke DB)
-     * 2. Hitung kebutuhan kalori via AkgService
-     * 3. Ambil menu + gizi dari DB
-     * 4. Ranking via FuzzyAhpService
-     * 5. Simpan hasil ranking ke tabel rekomendasi
-     * 6. Tampilkan hasil
+     * Alur sistem final:
+     * 1. Validasi & simpan data anak
+     * 2. Hitung kebutuhan kalori harian (AKG 2019, tanpa PAL)
+     * 3. Distribusi energi ke 6 waktu makan (20/10/25/10/25/10)
+     * 4. Bentuk 3 paket kandidat (berbasis kesesuaian kalori AKG per slot)
+     * 5. Ranking 3 paket dengan Fuzzy AHP (4 kriteria: kalori, karbo, protein, serat)
+     * 6. Simpan 3 paket berperingkat ke tabel rekomendasi
+     * 7. Tampilkan Peringkat 1, 2, 3
      */
     public function proses(Request $request)
     {
         $request->validate([
-            'nama'              => ['required', 'string', 'max:100'],
-            'jenis_kelamin'     => ['required', 'in:L,P'],
-            'tanggal_lahir'     => ['required', 'date', 'before:today'],
-            'berat_badan'       => ['required', 'numeric', 'min:5', 'max:150'],
-            'tinggi_badan'      => ['required', 'numeric', 'min:50', 'max:250'],
-            'tingkat_aktivitas' => ['required', 'in:ringan,sedang,berat'],
-            'waktu_makan'       => ['required', 'in:sarapan,makan_siang,makan_malam'],
+            'nama'          => ['required', 'string', 'max:100'],
+            'jenis_kelamin' => ['required', 'in:L,P'],
+            'tanggal_lahir' => [
+                'required',
+                'date',
+                'before:today',
+                'after:' . now()->subYears(18)->toDateString(),
+            ],
+            'berat_badan' => 'required|numeric|min:1',
+            'tinggi_badan' => 'required|numeric|min:1',
+            'tingkat_aktivitas' => 'required',
+        ], [
+            'tanggal_lahir.after' => 'Sistem ini ditujukan untuk anak usia 1–18 tahun.',
         ]);
 
-        // STEP 1: Simpan data anak ke DB
-        // Data anak tetap disimpan agar hasil rekomendasi punya referensi
+        // ── STEP 1: Simpan data anak ──────────────────────────
         $anak = Anak::create([
-            'nama'              => $request->nama,
-            'jenis_kelamin'     => $request->jenis_kelamin,
-            'tanggal_lahir'     => $request->tanggal_lahir,
-            'berat_badan'       => $request->berat_badan,
-            'tinggi_badan'      => $request->tinggi_badan,
+            'nama'          => $request->nama,
+            'jenis_kelamin' => $request->jenis_kelamin,
+            'tanggal_lahir' => $request->tanggal_lahir,
+            'berat_badan' => $request->berat_badan,
+            'tinggi_badan' => $request->tinggi_badan,
             'tingkat_aktivitas' => $request->tingkat_aktivitas,
         ]);
 
-        $waktuMakan = $request->waktu_makan;
-
-        // STEP 2: Hitung kebutuhan kalori (AkgService)
+        // ── STEP 2: Hitung kebutuhan kalori (AKG 2019) ───────
+        // AkgService menggunakan $anak->usia (computed dari tanggal_lahir)
         $totalKalori = $this->akgService->hitungKebutuhanKalori($anak);
 
-        $distribusi = [
-            'sarapan'     => $totalKalori * 0.30,
-            'makan_siang' => $totalKalori * 0.40,
-            'makan_malam' => $totalKalori * 0.30,
-        ];
-        $kaloriTarget = $distribusi[$waktuMakan];
+        // ── STEP 3: Distribusi ke 6 waktu makan ──────────────
+        $distribusi = $this->akgService->distribusiKalori($totalKalori);
 
-        // STEP 3: Ambil menu + gizi dari DB
-        $menus = Menu::with('kandunganGizi')
-                     ->where('jenis_menu', $waktuMakan)
-                     ->where('is_active', true)
-                     ->get();
+        // ── STEP 4: Bentuk 3 paket kandidat ──────────────────
+        $paketKandidat = $this->paketService->generatePaketKandidat($distribusi);
 
-        if ($menus->isEmpty()) {
-            return back()->with('error', 'Tidak ada menu tersedia untuk waktu makan ini.');
-        }
-
-        // STEP 4: Ranking via Fuzzy AHP
-        $ranked = $this->fuzzyAhp->rankMenus($menus, $kaloriTarget);
+        // ── STEP 5: Ranking paket dengan Fuzzy AHP ───────────
+        $ranked = $this->fuzzyAhp->rankPaket($paketKandidat, $totalKalori);
         $cr     = $this->fuzzyAhp->getConsistencyRatio();
 
-        // STEP 5: Simpan hasil ranking ke DB
+        // ── STEP 6: Simpan 3 paket ke database ───────────────
+        $rekomendasiIds = [];
+
         foreach ($ranked as $item) {
-            Rekomendasi::create([
+            $paket = $item['paket'];
+            $menus = $paket['menus'];
+
+            $rekomendasi = Rekomendasi::create([
                 'anak_id'                 => $anak->id,
-                'menu_id'                 => $item['menu_id'],
                 'tanggal_rekomendasi'     => today(),
-                'waktu_makan'             => $waktuMakan,
-                'bobot_kriteria'          => $item['bobot_kriteria'],
-                'nilai_preferensi'        => $item['skor'],
                 'ranking'                 => $item['ranking'],
+                'menu_sarapan_id'         => $menus['sarapan']?->id,
+                'menu_snack_pagi_id'      => $menus['snack_pagi']?->id,
+                'menu_makan_siang_id'     => $menus['makan_siang']?->id,
+                'menu_snack_sore_id'      => $menus['snack_sore']?->id,
+                'menu_makan_malam_id'     => $menus['makan_malam']?->id,
+                'menu_snack_malam_id'     => $menus['snack_malam']?->id,
                 'kebutuhan_kalori_harian' => $totalKalori,
+                'total_kalori_paket'      => $paket['total_gizi']['kalori'],
+                'nilai_preferensi'        => $item['skor'],
+                'bobot_kriteria'          => $item['bobot_kriteria'],
                 'consistency_ratio'       => $cr,
-                'status'                  => 'aktif',
             ]);
+
+            $rekomendasiIds[$item['ranking']] = $rekomendasi->id;
         }
 
-        // STEP 6: Tampilkan hasil
+        // ── STEP 7: Tampilkan hasil ───────────────────────────
         return view('rekomendasi.hasil', [
-            'anak'         => $anak,
-            'ranked'       => $ranked,
-            'menus'        => $menus,
-            'waktuMakan'   => $waktuMakan,
-            'kaloriTarget' => round($kaloriTarget, 2),
-            'totalKalori'  => round($totalKalori, 2),
-            'cr'           => $cr,
-            'crValid'      => $cr < 0.1,
+            'anak'           => $anak,
+            'ranked'         => $ranked,
+            'distribusi'     => $distribusi,
+            'totalKalori'    => round($totalKalori, 2),
+            'rekomendasiIds' => $rekomendasiIds,
+            'labelWaktu'     => $this->labelWaktu(),
         ]);
+    }
+
+    /**
+     * Label tampilan untuk 6 waktu makan.
+     */
+    private function labelWaktu(): array
+    {
+        return [
+            'sarapan'     => 'Sarapan',
+            'snack_pagi'  => 'Snack Pagi',
+            'makan_siang' => 'Makan Siang',
+            'snack_sore'  => 'Snack Sore',
+            'makan_malam' => 'Makan Malam',
+            'snack_malam' => 'Snack Malam',
+        ];
     }
 }

@@ -8,31 +8,34 @@ use Illuminate\Support\Collection;
  * FuzzyAhpService
  *
  * Implementasi Fuzzy AHP (Chang's Extent Analysis, 1996)
- * untuk rekomendasi menu harian anak Diabetes Mellitus Tipe 1.
+ * untuk meranking PAKET MENU HARIAN bagi anak DM Tipe 1.
  *
- * Tipe Kriteria:
- * - TARGET  : kalori          → deviasi dari kebutuhan kalori (lebih kecil = lebih baik)
- * - COST    : karbohidrat     → nilai lebih rendah = lebih baik untuk DM
- * - BENEFIT : protein         → nilai lebih tinggi = lebih baik
- * - BENEFIT : serat           → nilai lebih tinggi = lebih baik
- * - COST    : indeks_glikemik → nilai lebih rendah = lebih baik untuk DM
+ * 4 Kriteria final (validasi ahli gizi, sumber data TKPI 2020):
+ *   - TARGET  : kalori        -> deviasi total paket dari kebutuhan harian AKG
+ *   - COST    : karbohidrat   -> total paket; lebih rendah lebih baik untuk DM
+ *   - BENEFIT : protein       -> total paket; lebih tinggi lebih baik
+ *   - BENEFIT : serat         -> total paket; lebih tinggi lebih baik
+ *
+ * Catatan: Indeks Glikemik TIDAK digunakan karena tidak tersedia di TKPI 2020.
+ *
+ * Bobot hasil Fuzzy AHP (terverifikasi, CR = 0.0038):
+ *   Karbohidrat 42.44% > Kalori 24.74% = Serat 24.74% > Protein 8.09%
  */
 class FuzzyAhpService
 {
-    // ── KONFIGURASI KRITERIA ──────────────────────────────────────
+    // ── KONFIGURASI KRITERIA ────────────────────────────────────
 
-    private const CRITERIA = ['kalori', 'karbohidrat', 'protein', 'serat', 'indeks_glikemik'];
+    public const CRITERIA = ['kalori', 'karbohidrat', 'protein', 'serat'];
 
     private const CRITERIA_TYPE = [
-        'kalori'          => 'target',   // deviasi dari kebutuhan
-        'karbohidrat'     => 'cost',
-        'protein'         => 'benefit',
-        'serat'           => 'benefit',
-        'indeks_glikemik' => 'cost',
+        'kalori'      => 'target',   // deviasi dari kebutuhan harian
+        'karbohidrat' => 'cost',
+        'protein'     => 'benefit',
+        'serat'       => 'benefit',
     ];
 
     /**
-     * Skala TFN (Triangular Fuzzy Number) — Saaty dimodifikasi untuk fuzzy.
+     * Skala TFN (Triangular Fuzzy Number) — Saaty dimodifikasi.
      * Format: [l, m, u]
      */
     private const TFN = [
@@ -46,43 +49,68 @@ class FuzzyAhpService
 
     /**
      * Matriks perbandingan berpasangan — skala Saaty (crisp).
-     * Urutan: [kalori, karbohidrat, protein, serat, indeks_glikemik]
+     * Urutan: [kalori, karbohidrat, protein, serat]
      *
-     * Justifikasi prioritas untuk DM Tipe 1 anak:
-     * - Indeks Glikemik → paling kritis (langsung pengaruhi gula darah)
-     * - Karbohidrat     → sangat penting (sumber utama glukosa)
-     * - Serat           → penting (memperlambat absorpsi glukosa)
-     * - Protein         → penting untuk pertumbuhan anak
-     * - Kalori          → disesuaikan dengan kebutuhan energi harian
+     * Prioritas (DM Tipe 1 anak, validasi ahli gizi + literatur ADA/ISPAD):
+     *   Karbohidrat > Kalori = Serat > Protein
+     *
+     * Nilai perbandingan:
+     *   Karbohidrat vs Kalori   = 2 (sedikit lebih penting)
+     *   Karbohidrat vs Protein  = 3 (cukup lebih penting)
+     *   Karbohidrat vs Serat    = 2 (sedikit lebih penting)
+     *   Kalori vs Serat         = 1 (setara)
+     *   Kalori vs Protein       = 2 (sedikit lebih penting)
+     *   Serat vs Protein        = 2 (sedikit lebih penting)
      */
     private array $pairwiseMatrix = [
-        //  kalori  karbo   protein  serat   IG
-        [1,     1/3,    1/2,    1/3,    1/5],  // kalori
-        [3,     1,      2,      1,      1/3],  // karbohidrat
-        [2,     1/2,    1,      1/2,    1/3],  // protein
-        [3,     1,      2,      1,      1/2],  // serat
-        [5,     3,      3,      2,      1  ],  // indeks_glikemik
+        //  kalori  karbo   protein  serat
+        [1,     1/2,    2,      1  ],  // kalori
+        [2,     1,      3,      2  ],  // karbohidrat
+        [1/2,   1/3,    1,      1/2],  // protein
+        [1,     1/2,    2,      1  ],  // serat
     ];
 
-    // Cache bobot agar tidak dihitung berulang dalam satu request
+    // Random Index Saaty untuk n=4
+    private const RI = 0.90;
+
+    // Cache bobot dalam satu request
     private ?array $cachedWeights = null;
 
-    // ── PUBLIC API ────────────────────────────────────────────────
+    // ══════════════════════════════════════════════════════════
+    // PUBLIC API
+    // ══════════════════════════════════════════════════════════
 
     /**
-     * Hitung ranking menu berdasarkan Fuzzy AHP.
+     * Ranking paket menu harian.
      *
-     * @param  Collection  $menus            Menu::with('kandunganGizi')
-     * @param  float       $kebutuhanKalori  Kalori untuk 1 waktu makan (dari AkgService)
-     * @return array  Menu yang sudah diranking, skor tertinggi = ranking 1
+     * @param  array  $paketKandidat  Output dari PaketHarianService::generatePaketKandidat()
+     *   Format tiap paket:
+     *   [
+     *     'id_paket'   => 'A',
+     *     'menus'      => ['sarapan' => Menu, ...],
+     *     'total_gizi' => ['kalori' => float, 'karbohidrat' => float, ...]
+     *   ]
+     * @param  float  $kebutuhanKalori  AKG harian anak
+     * @return array  Paket lengkap + 'skor', 'ranking', 'bobot_kriteria', urut skor tertinggi
      */
-    public function rankMenus(Collection $menus, float $kebutuhanKalori): array
+    public function rankPaket(array $paketKandidat, float $kebutuhanKalori): array
     {
-        $weights   = $this->hitungBobot();
-        $rawValues = $this->collectRawValues($menus, $kebutuhanKalori);
-
-        if (empty($rawValues)) {
+        if (empty($paketKandidat)) {
             return [];
+        }
+
+        $weights   = $this->hitungBobot();
+        $rawValues = [];
+
+        foreach ($paketKandidat as $paket) {
+            $g = $paket['total_gizi'];
+            $rawValues[] = [
+                'paket'       => $paket,
+                'kalori'      => abs($g['kalori'] - $kebutuhanKalori), // deviasi
+                'karbohidrat' => $g['karbohidrat'],
+                'protein'     => $g['protein'],
+                'serat'       => $g['serat'],
+            ];
         }
 
         $minMax  = $this->hitungMinMax($rawValues);
@@ -93,47 +121,40 @@ class FuzzyAhpService
             $skor       = $this->hitungSkor($normalized, $weights);
 
             $results[] = [
-                'menu_id'        => $raw['menu_id'],
-                'nama_menu'      => $raw['nama_menu'],
-                'jenis_menu'     => $raw['jenis_menu'],
+                'paket'          => $raw['paket'],
                 'skor'           => round($skor, 6),
                 'bobot_kriteria' => $weights,
             ];
         }
 
-        // Urutkan: skor tertinggi = ranking 1
         usort($results, fn($a, $b) => $b['skor'] <=> $a['skor']);
 
-        foreach ($results as $i => &$result) {
-            $result['ranking'] = $i + 1;
+        foreach ($results as $i => &$r) {
+            $r['ranking'] = $i + 1;
         }
 
         return $results;
     }
 
-    /** Kembalikan bobot kriteria hasil Fuzzy AHP */
+    /** Bobot kriteria hasil Fuzzy AHP */
     public function getBobot(): array
     {
         return $this->hitungBobot();
     }
 
     /**
-     * Kembalikan CR untuk validasi di Controller.
-     * CR < 0.1 = matriks konsisten (syarat akademis AHP).
-     * Tidak disimpan ke database.
+     * Consistency Ratio — disimpan untuk audit admin, tidak ditampilkan ke parent.
+     * Nilai valid: CR < 0.10
      */
     public function getConsistencyRatio(): float
     {
         return $this->hitungConsistencyRatio();
     }
 
-    // ── STEP 1: FUZZY PAIRWISE MATRIX ────────────────────────────
+    // ══════════════════════════════════════════════════════════
+    // LANGKAH 1 — FUZZY PAIRWISE MATRIX
+    // ══════════════════════════════════════════════════════════
 
-    /**
-     * Konversi matriks crisp ke TFN.
-     * Nilai >= 1 → ambil TFN dari tabel.
-     * Nilai <  1 → balik TFN: (1/u, 1/m, 1/l).
-     */
     private function buildFuzzyMatrix(): array
     {
         $n     = count($this->pairwiseMatrix);
@@ -155,11 +176,10 @@ class FuzzyAhpService
         return $fuzzy;
     }
 
-    // ── STEP 2: FUZZY SYNTHETIC EXTENT (Si) ──────────────────────
+    // ══════════════════════════════════════════════════════════
+    // LANGKAH 2 — SYNTHETIC EXTENT (Si)
+    // ══════════════════════════════════════════════════════════
 
-    /**
-     * Si = (Σj Mij) ⊗ (1 / Σi Σj Mij)
-     */
     private function hitungSyntheticExtent(array $fuzzyMatrix): array
     {
         $n = count($fuzzyMatrix);
@@ -174,7 +194,6 @@ class FuzzyAhpService
         }
 
         $Si = [];
-
         for ($i = 0; $i < $n; $i++) {
             $rowL = array_sum(array_column($fuzzyMatrix[$i], 0));
             $rowM = array_sum(array_column($fuzzyMatrix[$i], 1));
@@ -190,14 +209,10 @@ class FuzzyAhpService
         return $Si;
     }
 
-    // ── STEP 3: DEGREE OF POSSIBILITY ────────────────────────────
+    // ══════════════════════════════════════════════════════════
+    // LANGKAH 3 — DEGREE OF POSSIBILITY V(Si >= Sj)
+    // ══════════════════════════════════════════════════════════
 
-    /**
-     * V(Si >= Sj) — Chang (1996):
-     *   1                                jika m1 >= m2
-     *   0                                jika l2 >= u1
-     *   (l2 - u1) / (m1 - u1 - m2 + l2) selainnya
-     */
     private function degreeOfPossibility(array $Si, array $Sj): float
     {
         [$l1, $m1, $u1] = $Si;
@@ -211,12 +226,10 @@ class FuzzyAhpService
         return abs($denom) < 1e-10 ? 0.0 : ($l2 - $u1) / $denom;
     }
 
-    // ── STEP 4: BOBOT KRITERIA ────────────────────────────────────
+    // ══════════════════════════════════════════════════════════
+    // LANGKAH 4 — BOBOT KRITERIA
+    // ══════════════════════════════════════════════════════════
 
-    /**
-     * d'i = min V(Si >= Sj), j ≠ i
-     * Wi  = d'i / Σ d'i
-     */
     private function hitungBobot(): array
     {
         if ($this->cachedWeights !== null) {
@@ -251,13 +264,10 @@ class FuzzyAhpService
         return $weights;
     }
 
-    // ── STEP 5: NORMALISASI MIN-MAX ───────────────────────────────
+    // ══════════════════════════════════════════════════════════
+    // LANGKAH 5 — NORMALISASI MIN-MAX
+    // ══════════════════════════════════════════════════════════
 
-    /**
-     * benefit → (nilai - min) / (max - min)
-     * cost    → (max - nilai) / (max - min)
-     * target  → deviasi sudah dihitung di collectRawValues → perlakukan sebagai cost
-     */
     private function normalisasi(array $raw, array $minMax): array
     {
         $normal = [];
@@ -275,10 +285,10 @@ class FuzzyAhpService
 
             $type = self::CRITERIA_TYPE[$key];
 
-            $normal[$key] = match($type) {
+            $normal[$key] = match ($type) {
                 'benefit' => round(($nilai - $min) / $range, 6),
                 'cost'    => round(($max - $nilai) / $range, 6),
-                'target'  => round(($max - $nilai) / $range, 6), // deviasi → as cost
+                'target'  => round(($max - $nilai) / $range, 6),
                 default   => 0.0,
             };
         }
@@ -286,9 +296,10 @@ class FuzzyAhpService
         return $normal;
     }
 
-    // ── STEP 6: SKOR AKHIR ───────────────────────────────────────
+    // ══════════════════════════════════════════════════════════
+    // LANGKAH 6 — SKOR AKHIR
+    // ══════════════════════════════════════════════════════════
 
-    /** Skor = Σ (Wi × Nilai_Normal_i) */
     private function hitungSkor(array $normalized, array $weights): float
     {
         $skor = 0.0;
@@ -300,37 +311,9 @@ class FuzzyAhpService
         return $skor;
     }
 
-    // ── HELPER: KUMPULKAN NILAI MENTAH ───────────────────────────
-
-    /**
-     * Untuk kriteria 'kalori':
-     * → Hitung deviasi absolut dari kebutuhan kalori waktu makan.
-     *   Deviasi kecil = menu lebih cocok secara energi.
-     */
-    private function collectRawValues(Collection $menus, float $kebutuhanKalori): array
-    {
-        $raw = [];
-
-        foreach ($menus as $menu) {
-            $gizi = $menu->kandunganGizi;
-            if (!$gizi) continue;
-
-            $raw[] = [
-                'menu_id'         => $menu->id,
-                'nama_menu'       => $menu->nama_menu,
-                'jenis_menu'      => $menu->jenis_menu,
-                'kalori'          => abs((float) $gizi->energi_kkal - $kebutuhanKalori),
-                'karbohidrat'     => (float) $gizi->karbohidrat_gram,
-                'protein'         => (float) $gizi->protein_gram,
-                'serat'           => (float) $gizi->serat_gram,
-                'indeks_glikemik' => (float) ($gizi->indeks_glikemik ?? 55),
-            ];
-        }
-
-        return $raw;
-    }
-
-    // ── HELPER: MIN-MAX PER KRITERIA ─────────────────────────────
+    // ══════════════════════════════════════════════════════════
+    // HELPER — MIN-MAX PER KRITERIA
+    // ══════════════════════════════════════════════════════════
 
     private function hitungMinMax(array $rawValues): array
     {
@@ -350,12 +333,10 @@ class FuzzyAhpService
         return $minMax;
     }
 
-    // ── HELPER: CONSISTENCY RATIO ────────────────────────────────
+    // ══════════════════════════════════════════════════════════
+    // HELPER — CONSISTENCY RATIO
+    // ══════════════════════════════════════════════════════════
 
-    /**
-     * CR = CI / RI,  CI = (λmax - n) / (n - 1)
-     * Syarat valid: CR < 0.1
-     */
     public function hitungConsistencyRatio(): float
     {
         $n      = count($this->pairwiseMatrix);
@@ -368,33 +349,34 @@ class FuzzyAhpService
             }
         }
 
-        $weights = [];
+        $w = [];
         for ($i = 0; $i < $n; $i++) {
             $rowSum = 0.0;
             for ($j = 0; $j < $n; $j++) {
                 $rowSum += $matrix[$i][$j] / $colSum[$j];
             }
-            $weights[$i] = $rowSum / $n;
+            $w[$i] = $rowSum / $n;
         }
 
         $lambdaMax = 0.0;
         for ($i = 0; $i < $n; $i++) {
             $ws = 0.0;
             for ($j = 0; $j < $n; $j++) {
-                $ws += $matrix[$i][$j] * $weights[$j];
+                $ws += $matrix[$i][$j] * $w[$j];
             }
-            $lambdaMax += $ws / $weights[$i];
+            $lambdaMax += $ws / $w[$i];
         }
         $lambdaMax /= $n;
 
-        $ri = [1 => 0.0, 2 => 0.0, 3 => 0.58, 4 => 0.90, 5 => 1.12, 6 => 1.24, 7 => 1.32];
         $ci = ($lambdaMax - $n) / ($n - 1);
-        $cr = $ci / ($ri[$n] ?? 1.12);
+        $cr = $ci / self::RI;
 
         return round(abs($cr), 4);
     }
 
-    // ── HELPER: TFN LOOKUP ────────────────────────────────────────
+    // ══════════════════════════════════════════════════════════
+    // HELPER — TFN LOOKUP
+    // ══════════════════════════════════════════════════════════
 
     private function getTfn(float $value): array
     {

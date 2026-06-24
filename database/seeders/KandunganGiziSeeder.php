@@ -6,142 +6,82 @@ use App\Models\KandunganGizi;
 use App\Models\Menu;
 use Illuminate\Database\Seeder;
 
+/**
+ * Seeder kandungan gizi — placeholder.
+ *
+ * ─────────────────────────────────────────────────────────────────
+ *  PENTING: ANGKA DI BAWAH HARUS DIVERIFIKASI DARI TKPI 2020
+ * ─────────────────────────────────────────────────────────────────
+ *
+ * Angka per porsi di sini adalah ESTIMASI awal untuk testing logika DSS.
+ * Sebelum sidang, ganti nilai gizi tiap menu dengan komposisi resmi dari
+ * Tabel Komposisi Pangan Indonesia (TKPI 2020, Kemenkes RI).
+ *
+ * Cara menghitung per porsi:
+ *   nilai_per_porsi = (nilai_per_100g_TKPI x porsi_gram_menu) / 100
+ *
+ * Catatan: TKPI 2020 TIDAK memuat Indeks Glikemik — kriteria DSS final
+ * menggunakan 4 kriteria saja (Kalori, Karbohidrat, Protein, Serat),
+ * semua tersedia di TKPI 2020.
+ *
+ * Urutan array HARUS sama dengan urutan menu di MenuSeeder agar menu_id cocok.
+ */
 class KandunganGiziSeeder extends Seeder
 {
-    /**
-     * Data nilai gizi per menu.
-     * Sumber: Tabel Komposisi Pangan Indonesia (TKPI) 2017
-     *
-     * Catatan untuk Fuzzy AHP:
-     * Kolom-kolom ini adalah KRITERIA penilaian alternatif.
-     * - energi_kkal      : kriteria benefit (sesuai kebutuhan kalori)
-     * - karbohidrat_gram : kriteria cost (semakin rendah semakin baik untuk DM)
-     * - protein_gram     : kriteria benefit
-     * - lemak_gram       : kriteria cost
-     * - serat_gram       : kriteria benefit (memperlambat absorpsi glukosa)
-     * - indeks_glikemik  : kriteria cost (kritis untuk DM Tipe 1)
-     * - gula_gram        : kriteria cost
-     */
     public function run(): void
     {
-        $data = [
+        // Format: [energi_kkal, karbohidrat_gram, protein_gram, serat_gram]
+        // (lemak & micronutrient bisa ditambah nanti jika dibutuhkan)
+        $gizi = [
+            // SARAPAN
+            [350, 48, 15,  5.0],   // Nasi Merah + Telur Rebus + Bayam
+            [280, 38, 16,  5.0],   // Roti Gandum + Telur Dadar
+            [300, 50, 10,  6.0],   // Oatmeal + Pisang + Susu
 
-            // ── SARAPAN ───────────────────────────────────────────────
-            'Nasi Merah dengan Telur Rebus' => [
-                'energi_kkal'      => 320.00,
-                'karbohidrat_gram' => 52.00,
-                'protein_gram'     => 14.00,
-                'lemak_gram'       => 7.00,
-                'serat_gram'       => 2.50,
-                'indeks_glikemik'  => 55,
-                'gula_gram'        => 1.00,
-                'sumber_data'      => 'TKPI 2017',
-            ],
-            'Bubur Ayam Tanpa Kerupuk' => [
-                'energi_kkal'      => 280.00,
-                'karbohidrat_gram' => 45.00,
-                'protein_gram'     => 15.00,
-                'lemak_gram'       => 5.00,
-                'serat_gram'       => 1.00,
-                'indeks_glikemik'  => 68,
-                'gula_gram'        => 1.50,
-                'sumber_data'      => 'TKPI 2017',
-            ],
-            'Roti Gandum dengan Telur Dadar' => [
-                'energi_kkal'      => 295.00,
-                'karbohidrat_gram' => 38.00,
-                'protein_gram'     => 16.00,
-                'lemak_gram'       => 8.00,
-                'serat_gram'       => 4.00,
-                'indeks_glikemik'  => 50,
-                'gula_gram'        => 3.00,
-                'sumber_data'      => 'TKPI 2017',
-            ],
+            // SNACK PAGI
+            [95,  25, 0.5, 4.0],   // Apel Potong
+            [150, 24, 6,   2.5],   // Yogurt + Pisang
+            [90,  24, 0.5, 5.5],   // Pir Potong
 
-            // ── MAKAN SIANG ───────────────────────────────────────────
-            'Nasi Merah dengan Ayam Rebus dan Sayur Bayam' => [
-                'energi_kkal'      => 480.00,
-                'karbohidrat_gram' => 62.00,
-                'protein_gram'     => 28.00,
-                'lemak_gram'       => 10.00,
-                'serat_gram'       => 3.50,
-                'indeks_glikemik'  => 55,
-                'gula_gram'        => 2.00,
-                'sumber_data'      => 'TKPI 2017',
-            ],
-            'Nasi Merah dengan Tempe Kukus dan Tumis Kangkung' => [
-                'energi_kkal'      => 460.00,
-                'karbohidrat_gram' => 65.00,
-                'protein_gram'     => 22.00,
-                'lemak_gram'       => 11.00,
-                'serat_gram'       => 5.00,
-                'indeks_glikemik'  => 52,
-                'gula_gram'        => 2.50,
-                'sumber_data'      => 'TKPI 2017',
-            ],
-            'Nasi Merah dengan Ikan Kukus dan Brokoli' => [
-                'energi_kkal'      => 455.00,
-                'karbohidrat_gram' => 60.00,
-                'protein_gram'     => 30.00,
-                'lemak_gram'       => 8.00,
-                'serat_gram'       => 4.00,
-                'indeks_glikemik'  => 54,
-                'gula_gram'        => 1.50,
-                'sumber_data'      => 'TKPI 2017',
-            ],
-            'Nasi Merah dengan Tahu Bakar dan Sup Wortel' => [
-                'energi_kkal'      => 430.00,
-                'karbohidrat_gram' => 63.00,
-                'protein_gram'     => 18.00,
-                'lemak_gram'       => 9.00,
-                'serat_gram'       => 4.50,
-                'indeks_glikemik'  => 53,
-                'gula_gram'        => 3.00,
-                'sumber_data'      => 'TKPI 2017',
-            ],
+            // MAKAN SIANG
+            [480, 65, 28,  6.5],   // Nasi Merah + Ayam Rebus + Bayam
+            [460, 60, 32,  5.8],   // Nasi Merah + Ikan Kukus + Brokoli
+            [510, 70, 22,  7.0],   // Nasi Merah + Tempe Kukus + Kangkung
 
-            // ── MAKAN MALAM ───────────────────────────────────────────
-            'Nasi Merah dengan Ayam Panggang dan Tumis Buncis' => [
-                'energi_kkal'      => 420.00,
-                'karbohidrat_gram' => 55.00,
-                'protein_gram'     => 27.00,
-                'lemak_gram'       => 9.00,
-                'serat_gram'       => 3.50,
-                'indeks_glikemik'  => 55,
-                'gula_gram'        => 1.50,
-                'sumber_data'      => 'TKPI 2017',
-            ],
-            'Nasi Merah dengan Telur Rebus dan Sup Sayuran' => [
-                'energi_kkal'      => 390.00,
-                'karbohidrat_gram' => 55.00,
-                'protein_gram'     => 20.00,
-                'lemak_gram'       => 8.00,
-                'serat_gram'       => 4.00,
-                'indeks_glikemik'  => 54,
-                'gula_gram'        => 2.00,
-                'sumber_data'      => 'TKPI 2017',
-            ],
-            'Nasi Merah dengan Tempe Bacem dan Sayur Asem' => [
-                'energi_kkal'      => 410.00,
-                'karbohidrat_gram' => 60.00,
-                'protein_gram'     => 19.00,
-                'lemak_gram'       => 10.00,
-                'serat_gram'       => 4.50,
-                'indeks_glikemik'  => 53,
-                'gula_gram'        => 3.50,
-                'sumber_data'      => 'TKPI 2017',
-            ],
+            // SNACK SORE
+            [170, 12, 8,   4.0],   // Kacang Tanah Rebus
+            [130, 28, 4,   3.5],   // Jagung Rebus
+            [135, 31, 2,   3.8],   // Ubi Kukus
+
+            // MAKAN MALAM
+            [430, 55, 30,  6.0],   // Nasi Merah + Ayam Panggang + Buncis
+            [450, 58, 31,  6.2],   // Nasi Merah + Ikan Pepes + Sayur Bening
+            [400, 60, 18,  5.5],   // Nasi Merah + Tahu Kukus + Sop
+
+            // SNACK MALAM
+            [120, 12, 8,   0],     // Susu Rendah Lemak
+            [60,  15, 0.5, 2.5],   // Pepaya Potong
+            [160, 9,  2,   7.0],   // Alpukat Potong
         ];
 
-        foreach ($data as $namaMenu => $gizi) {
-            $menu = Menu::where('nama_menu', $namaMenu)->first();
+        $menus = Menu::orderBy('id')->get();
 
-            if ($menu) {
-                KandunganGizi::create(array_merge(
-                    ['menu_id' => $menu->id],
-                    $gizi
-                ));
-            }
+        foreach ($menus as $i => $menu) {
+            if (!isset($gizi[$i])) continue;
+
+            [$energi, $karbo, $protein, $serat] = $gizi[$i];
+
+            KandunganGizi::create([
+                'menu_id'          => $menu->id,
+                'energi_kkal'      => $energi,
+                'karbohidrat_gram' => $karbo,
+                'protein_gram'     => $protein,
+                'lemak_gram'       => 0,           // diisi dari TKPI 2020 nanti
+                'serat_gram'       => $serat,
+                'indeks_glikemik'  => null,        // ❌ tidak dipakai lagi (4 kriteria)
+                'gula_gram'        => 0,           // tidak dipakai
+                'sumber_data'      => 'TKPI 2020 (BELUM DIVERIFIKASI)',
+            ]);
         }
     }
 }

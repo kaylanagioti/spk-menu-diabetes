@@ -5,116 +5,213 @@ namespace Database\Seeders;
 use App\Models\Menu;
 use Illuminate\Database\Seeder;
 
+/**
+ * Seeder menu — CURATED DATASET (validasi ahli gizi).
+ *
+ * Seluruh menu di sini SUDAH dinyatakan layak untuk anak DM Tipe 1.
+ * Makanan tidak sehat (gorengan, snack manis, karbohidrat sederhana,
+ * makanan olahan berat) TIDAK dimasukkan ke database.
+ *
+ * Jumlah menu per slot ≥ 3 agar PaketHarianService dapat menghasilkan
+ * 3 paket harian yang divers (tidak duplikat).
+ *
+ * Sumber: TKPI 2020 (Tabel Komposisi Pangan Indonesia, Kemenkes RI 2020).
+ */
 class MenuSeeder extends Seeder
 {
     public function run(): void
     {
         $menus = [
-
-            // ── SARAPAN ───────────────────────────────────────────────
+            // ── SARAPAN (20%) ────────────────────────────────
             [
-                'nama_menu'    => 'Nasi Merah dengan Telur Rebus',
-                'deskripsi'    => 'Nasi merah porsi kecil disajikan dengan telur rebus',
+                'nama_menu'    => 'Nasi Merah dengan Telur Rebus dan Tumis Bayam',
+                'deskripsi'    => 'Nasi beras merah, telur rebus, tumis bayam.',
                 'jenis_menu'   => 'sarapan',
                 'porsi_gram'   => 250,
                 'satuan_porsi' => 'gram',
+                'sumber_resep' => 'TKPI 2020',
                 'is_active'    => true,
-                'sumber_resep' => 'TKPI 2017',
-                'image_url'    => 'https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=400&q=80',
-            ],
-            [
-                'nama_menu'    => 'Bubur Ayam Tanpa Kerupuk',
-                'deskripsi'    => 'Bubur beras putih dengan suwiran ayam rebus dan sedikit kecap',
-                'jenis_menu'   => 'sarapan',
-                'porsi_gram'   => 300,
-                'satuan_porsi' => 'gram',
-                'is_active'    => true,
-                'sumber_resep' => 'TKPI 2017',
-                'image_url'    => 'https://images.unsplash.com/photo-1569050467447-ce54b3bbc37d?w=400&q=80',
+                'image_url'    => '/images/menu/nasi-merah-telur-bayam.jpg',
             ],
             [
                 'nama_menu'    => 'Roti Gandum dengan Telur Dadar',
-                'deskripsi'    => 'Dua lembar roti gandum utuh dengan telur dadar tanpa minyak',
+                'deskripsi'    => 'Roti gandum utuh dengan telur dadar minim minyak.',
                 'jenis_menu'   => 'sarapan',
                 'porsi_gram'   => 200,
                 'satuan_porsi' => 'gram',
+                'sumber_resep' => 'TKPI 2020',
                 'is_active'    => true,
-                'sumber_resep' => 'TKPI 2017',
-                'image_url'    => 'https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=400&q=80',
+                'image_url'    => '/images/menu/roti-gandum-telur-dadar.jpg',
+            ],
+            [
+                'nama_menu'    => 'Oatmeal dengan Pisang dan Susu Rendah Lemak',
+                'deskripsi'    => 'Oat utuh dimasak dengan susu rendah lemak dan irisan pisang.',
+                'jenis_menu'   => 'sarapan',
+                'porsi_gram'   => 250,
+                'satuan_porsi' => 'gram',
+                'sumber_resep' => 'TKPI 2020',
+                'is_active'    => true,
+                'image_url'    => '/images/menu/oatmeal-pisang.jpg',
             ],
 
-            // ── MAKAN SIANG ───────────────────────────────────────────
+            // ── SNACK PAGI (10%) ─────────────────────────────
+            [
+                'nama_menu'    => 'Apel Potong',
+                'deskripsi'    => 'Apel segar potong, sumber serat.',
+                'jenis_menu'   => 'snack_pagi',
+                'porsi_gram'   => 150,
+                'satuan_porsi' => 'gram',
+                'sumber_resep' => 'TKPI 2020',
+                'is_active'    => true,
+                'image_url'    => '/images/menu/apel-potong.jpg',
+            ],
+            [
+                'nama_menu'    => 'Yogurt Plain dengan Pisang',
+                'deskripsi'    => 'Yogurt tanpa gula tambahan dengan irisan pisang.',
+                'jenis_menu'   => 'snack_pagi',
+                'porsi_gram'   => 150,
+                'satuan_porsi' => 'gram',
+                'sumber_resep' => 'TKPI 2020',
+                'is_active'    => true,
+                'image_url'    => '/images/menu/yogurt-pisang.jpg',
+            ],
+            [
+                'nama_menu'    => 'Pir Potong',
+                'deskripsi'    => 'Buah pir segar potong, kaya serat.',
+                'jenis_menu'   => 'snack_pagi',
+                'porsi_gram'   => 150,
+                'satuan_porsi' => 'gram',
+                'sumber_resep' => 'TKPI 2020',
+                'is_active'    => true,
+                'image_url'    => '/images/menu/pir-potong.jpg',
+            ],
+
+            // ── MAKAN SIANG (25%) ────────────────────────────
             [
                 'nama_menu'    => 'Nasi Merah dengan Ayam Rebus dan Sayur Bayam',
-                'deskripsi'    => 'Nasi merah, ayam rebus tanpa kulit, sayur bayam rebus',
+                'deskripsi'    => 'Nasi beras merah, ayam rebus tanpa kulit, sayur bayam bening.',
                 'jenis_menu'   => 'makan_siang',
                 'porsi_gram'   => 400,
                 'satuan_porsi' => 'gram',
+                'sumber_resep' => 'TKPI 2020',
                 'is_active'    => true,
-                'sumber_resep' => 'TKPI 2017',
-                'image_url'    => 'https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?w=400&q=80',
-            ],
-            [
-                'nama_menu'    => 'Nasi Merah dengan Tempe Kukus dan Tumis Kangkung',
-                'deskripsi'    => 'Nasi merah, tempe kukus, tumis kangkung sedikit minyak',
-                'jenis_menu'   => 'makan_siang',
-                'porsi_gram'   => 380,
-                'satuan_porsi' => 'gram',
-                'is_active'    => true,
-                'sumber_resep' => 'TKPI 2017',
-                'image_url'    => 'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=400&q=80',
+                'image_url'    => '/images/menu/nasi-merah-ayam-bayam.jpg',
             ],
             [
                 'nama_menu'    => 'Nasi Merah dengan Ikan Kukus dan Brokoli',
-                'deskripsi'    => 'Nasi merah, ikan kakap kukus, brokoli rebus',
+                'deskripsi'    => 'Nasi beras merah, ikan kukus bumbu kuning, brokoli rebus.',
                 'jenis_menu'   => 'makan_siang',
                 'porsi_gram'   => 400,
                 'satuan_porsi' => 'gram',
+                'sumber_resep' => 'TKPI 2020',
                 'is_active'    => true,
-                'sumber_resep' => 'TKPI 2017',
-                'image_url'    => 'https://images.unsplash.com/photo-1559847844-5315695dadae?w=400&q=80',
+                'image_url'    => '/images/menu/nasi-merah-ikan-brokoli.jpg',
             ],
             [
-                'nama_menu'    => 'Nasi Merah dengan Tahu Bakar dan Sup Wortel',
-                'deskripsi'    => 'Nasi merah, tahu bakar tanpa minyak, sup wortel dan kentang',
+                'nama_menu'    => 'Nasi Merah dengan Tempe Kukus dan Tumis Kangkung',
+                'deskripsi'    => 'Nasi beras merah, tempe kukus, tumis kangkung minim minyak.',
                 'jenis_menu'   => 'makan_siang',
-                'porsi_gram'   => 420,
+                'porsi_gram'   => 380,
                 'satuan_porsi' => 'gram',
+                'sumber_resep' => 'TKPI 2020',
                 'is_active'    => true,
-                'sumber_resep' => 'TKPI 2017',
-                'image_url'    => 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&q=80',
+                'image_url'    => '/images/menu/nasi-merah-tempe-kangkung.jpg',
             ],
 
-            // ── MAKAN MALAM ───────────────────────────────────────────
+            // ── SNACK SORE (10%) ─────────────────────────────
+            [
+                'nama_menu'    => 'Kacang Tanah Rebus',
+                'deskripsi'    => 'Kacang tanah rebus, sumber protein dan serat.',
+                'jenis_menu'   => 'snack_sore',
+                'porsi_gram'   => 100,
+                'satuan_porsi' => 'gram',
+                'sumber_resep' => 'TKPI 2020',
+                'is_active'    => true,
+                'image_url'    => '/images/menu/kacang-rebus.jpg',
+            ],
+            [
+                'nama_menu'    => 'Jagung Rebus',
+                'deskripsi'    => 'Jagung manis rebus, karbohidrat kompleks.',
+                'jenis_menu'   => 'snack_sore',
+                'porsi_gram'   => 120,
+                'satuan_porsi' => 'gram',
+                'sumber_resep' => 'TKPI 2020',
+                'is_active'    => true,
+                'image_url'    => '/images/menu/jagung-rebus.jpg',
+            ],
+            [
+                'nama_menu'    => 'Ubi Kukus',
+                'deskripsi'    => 'Ubi jalar kukus, karbohidrat kompleks.',
+                'jenis_menu'   => 'snack_sore',
+                'porsi_gram'   => 120,
+                'satuan_porsi' => 'gram',
+                'sumber_resep' => 'TKPI 2020',
+                'is_active'    => true,
+                'image_url'    => '/images/menu/ubi-kukus.jpg',
+            ],
+
+            // ── MAKAN MALAM (25%) ────────────────────────────
             [
                 'nama_menu'    => 'Nasi Merah dengan Ayam Panggang dan Tumis Buncis',
-                'deskripsi'    => 'Nasi merah, ayam panggang tanpa kulit, tumis buncis',
+                'deskripsi'    => 'Nasi beras merah, ayam panggang tanpa kulit, tumis buncis.',
                 'jenis_menu'   => 'makan_malam',
                 'porsi_gram'   => 350,
                 'satuan_porsi' => 'gram',
+                'sumber_resep' => 'TKPI 2020',
                 'is_active'    => true,
-                'sumber_resep' => 'TKPI 2017',
-                'image_url'    => 'https://images.unsplash.com/photo-1598103442097-8b74394b95c3?w=400&q=80',
+                'image_url'    => '/images/menu/nasi-merah-ayam-buncis.jpg',
             ],
             [
-                'nama_menu'    => 'Nasi Merah dengan Telur Rebus dan Sup Sayuran',
-                'deskripsi'    => 'Nasi merah, dua butir telur rebus, sup sayuran campur',
+                'nama_menu'    => 'Nasi Merah dengan Ikan Pepes dan Sayur Bening',
+                'deskripsi'    => 'Nasi beras merah, ikan pepes (kukus daun), sayur bening labu.',
                 'jenis_menu'   => 'makan_malam',
-                'porsi_gram'   => 350,
+                'porsi_gram'   => 380,
                 'satuan_porsi' => 'gram',
+                'sumber_resep' => 'TKPI 2020',
                 'is_active'    => true,
-                'sumber_resep' => 'TKPI 2017',
-                'image_url'    => 'https://images.unsplash.com/photo-1547592180-85f173990554?w=400&q=80',
+                'image_url'    => '/images/menu/nasi-merah-ikan-pepes.jpg',
             ],
             [
-                'nama_menu'    => 'Nasi Merah dengan Tempe Bacem dan Sayur Asem',
-                'deskripsi'    => 'Nasi merah, tempe bacem rendah gula, sayur asem',
+                'nama_menu'    => 'Nasi Merah dengan Tahu Kukus dan Sayur Sop',
+                'deskripsi'    => 'Nasi beras merah, tahu kukus, sayur sop wortel-kentang.',
                 'jenis_menu'   => 'makan_malam',
-                'porsi_gram'   => 360,
+                'porsi_gram'   => 380,
                 'satuan_porsi' => 'gram',
+                'sumber_resep' => 'TKPI 2020',
                 'is_active'    => true,
-                'sumber_resep' => 'TKPI 2017',
-                'image_url'    => 'https://images.unsplash.com/photo-1455619452474-d2be8b1e70cd?w=400&q=80',
+                'image_url'    => '/images/menu/nasi-merah-tahu-sop.jpg',
+            ],
+
+            // ── SNACK MALAM (10%) ────────────────────────────
+            [
+                'nama_menu'    => 'Susu Rendah Lemak',
+                'deskripsi'    => 'Segelas susu rendah lemak tanpa gula tambahan.',
+                'jenis_menu'   => 'snack_malam',
+                'porsi_gram'   => 200,
+                'satuan_porsi' => 'ml',
+                'sumber_resep' => 'TKPI 2020',
+                'is_active'    => true,
+                'image_url'    => '/images/menu/susu-rendah-lemak.jpg',
+            ],
+            [
+                'nama_menu'    => 'Pepaya Potong',
+                'deskripsi'    => 'Pepaya segar potong, sumber serat dan vitamin.',
+                'jenis_menu'   => 'snack_malam',
+                'porsi_gram'   => 150,
+                'satuan_porsi' => 'gram',
+                'sumber_resep' => 'TKPI 2020',
+                'is_active'    => true,
+                'image_url'    => '/images/menu/pepaya-potong.jpg',
+            ],
+            [
+                'nama_menu'    => 'Alpukat Potong',
+                'deskripsi'    => 'Alpukat segar potong, lemak sehat dan serat tinggi.',
+                'jenis_menu'   => 'snack_malam',
+                'porsi_gram'   => 100,
+                'satuan_porsi' => 'gram',
+                'sumber_resep' => 'TKPI 2020',
+                'is_active'    => true,
+                'image_url'    => '/images/menu/alpukat-potong.jpg',
             ],
         ];
 
