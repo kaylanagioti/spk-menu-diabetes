@@ -26,7 +26,7 @@
             dibangkitkan pada <strong>{{ $rekTerpilih->tanggal_rekomendasi->format('d F Y') }}</strong>
         </p>
     </div>
-    <a href="{{ route('admin.riwayat.index', ['key' => request('key')]) }}"
+    <a href="{{ route('admin.riwayat.index') }}"
        class="btn btn-gray">← Kembali ke Riwayat</a>
 </div>
 
@@ -833,7 +833,7 @@
 
 {{-- ── Tombol aksi bawah ──────────────────────────────────────────── --}}
 <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:8px; margin-bottom:40px">
-    <a href="{{ route('admin.riwayat.index', ['key' => request('key')]) }}"
+    <a href="{{ route('admin.riwayat.index') }}"
        class="btn btn-gray">← Kembali ke Riwayat</a>
 
     <button onclick="window.print()" class="btn btn-blue">

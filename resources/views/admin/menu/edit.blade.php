@@ -5,33 +5,48 @@
 <h2 style="margin-bottom:20px">Edit Menu</h2>
 
 <div class="card">
-    <form action="{{ route('admin.menu.update', [$menu, 'key' => request('key')]) }}" method="POST">
+    <form action="{{ route('admin.menu.update', $menu) }}" method="POST">
         @csrf @method('PUT')
+
+        {{-- ── IDENTITAS MENU ── --}}
+        <p class="section-title">Identitas Menu</p>
 
         <label>Nama Menu</label>
         <input type="text" name="nama_menu" value="{{ old('nama_menu', $menu->nama_menu) }}" required>
         @error('nama_menu') <div class="error-msg">{{ $message }}</div> @enderror
 
-        <label>Waktu Makan</label>
-        <select name="jenis_menu" required>
-            <option value="sarapan"     {{ old('jenis_menu', $menu->jenis_menu) == 'sarapan'     ? 'selected' : '' }}>Sarapan</option>
-            <option value="makan_siang" {{ old('jenis_menu', $menu->jenis_menu) == 'makan_siang' ? 'selected' : '' }}>Makan Siang</option>
-            <option value="makan_malam" {{ old('jenis_menu', $menu->jenis_menu) == 'makan_malam' ? 'selected' : '' }}>Makan Malam</option>
-        </select>
-
-        <label>Porsi (gram)</label>
-        <input type="number" step="0.1" name="porsi_gram" value="{{ old('porsi_gram', $menu->porsi_gram) }}" required>
+        <div class="form-row">
+            <div>
+                <label>Waktu Makan</label>
+                <select name="jenis_menu" required>
+                    @foreach(['sarapan'=>'Sarapan','snack_pagi'=>'Snack Pagi','makan_siang'=>'Makan Siang','snack_sore'=>'Snack Sore','makan_malam'=>'Makan Malam','snack_malam'=>'Snack Malam'] as $val => $label)
+                        <option value="{{ $val }}"
+                            {{ old('jenis_menu', $menu->jenis_menu) == $val ? 'selected' : '' }}>
+                            {{ $label }}
+                        </option>
+                    @endforeach
+                </select>
+                @error('jenis_menu') <div class="error-msg">{{ $message }}</div> @enderror
+            </div>
+            <div>
+                <label>Porsi (gram)</label>
+                <input type="number" step="0.1" name="porsi_gram" value="{{ old('porsi_gram', $menu->porsi_gram) }}" required>
+                @error('porsi_gram') <div class="error-msg">{{ $message }}</div> @enderror
+            </div>
+        </div>
 
         <label>URL Gambar <span style="font-weight:normal;color:#888">(opsional)</span></label>
-        <input type="text" name="image_url" value="{{ old('image_url', $menu->image_url) }}"
+        <input type="url" name="image_url" value="{{ old('image_url', $menu->image_url) }}"
                placeholder="https://images.unsplash.com/photo-xxx?w=400">
         @if($menu->image_url)
-            <img src="{{ $menu->image_url }}" style="width:120px;height:80px;object-fit:cover;border-radius:8px;margin-bottom:12px"
+            <img src="{{ $menu->image_url }}"
+                 style="width:120px;height:80px;object-fit:cover;border-radius:8px;margin-bottom:12px;margin-top:-8px"
                  onerror="this.style.display='none'">
         @endif
+        @error('image_url') <div class="error-msg">{{ $message }}</div> @enderror
 
         <label>Deskripsi</label>
-        <textarea name="deskripsi" rows="3">{{ old('deskripsi', $menu->deskripsi) }}</textarea>
+        <textarea name="deskripsi" rows="2">{{ old('deskripsi', $menu->deskripsi) }}</textarea>
 
         <label>Sumber Resep</label>
         <input type="text" name="sumber_resep" value="{{ old('sumber_resep', $menu->sumber_resep) }}">
@@ -42,9 +57,54 @@
             <option value="0" {{ !old('is_active', $menu->is_active) ? 'selected' : '' }}>Nonaktif</option>
         </select>
 
-        <a class="btn btn-gray" href="{{ route('admin.menu.index', ['key' => request('key')]) }}">Batal</a>
+        <hr class="section-divider">
+
+        {{-- ── KANDUNGAN GIZI ── --}}
+        <p class="section-title">Kandungan Gizi (per porsi)</p>
+        <p style="font-size:12px;color:#666;margin-bottom:14px">
+            Kriteria aktif dalam Fuzzy AHP: <strong>Kalori, Karbohidrat, Protein, Serat</strong>.
+            Perubahan di sini langsung memengaruhi perhitungan rekomendasi berikutnya.
+        </p>
+
+        <div class="form-row">
+            <div>
+                <label>Kalori / Energi (kkal)</label>
+                <input type="number" step="0.01" name="energi_kkal"
+                       value="{{ old('energi_kkal', $gizi->energi_kkal) }}" required>
+                @error('energi_kkal') <div class="error-msg">{{ $message }}</div> @enderror
+            </div>
+            <div>
+                <label>Karbohidrat (gram)</label>
+                <input type="number" step="0.01" name="karbohidrat_gram"
+                       value="{{ old('karbohidrat_gram', $gizi->karbohidrat_gram) }}" required>
+                @error('karbohidrat_gram') <div class="error-msg">{{ $message }}</div> @enderror
+            </div>
+        </div>
+        <div class="form-row">
+            <div>
+                <label>Protein (gram)</label>
+                <input type="number" step="0.01" name="protein_gram"
+                       value="{{ old('protein_gram', $gizi->protein_gram) }}" required>
+                @error('protein_gram') <div class="error-msg">{{ $message }}</div> @enderror
+            </div>
+            <div>
+                <label>Serat (gram)</label>
+                <input type="number" step="0.01" name="serat_gram"
+                       value="{{ old('serat_gram', $gizi->serat_gram) }}" required>
+                @error('serat_gram') <div class="error-msg">{{ $message }}</div> @enderror
+            </div>
+        </div>
+
+        <label>Sumber Data Gizi <span style="font-weight:normal;color:#888">(opsional)</span></label>
+        <input type="text" name="sumber_data"
+               value="{{ old('sumber_data', $gizi->sumber_data) }}"
+               placeholder="Contoh: TKPI 2020, USDA">
+
+        <hr class="section-divider">
+
+        <a class="btn btn-gray" href="{{ route('admin.menu.index') }}">Batal</a>
         &nbsp;
-        <button class="btn btn-green" type="submit">Update</button>
+        <button class="btn btn-green" type="submit">Simpan Perubahan</button>
     </form>
 </div>
 @endsection

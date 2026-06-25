@@ -52,14 +52,14 @@
                     <div class="mb-3">
                         <label class="form-label">Nama Anak</label>
                         <input type="text" name="nama" class="form-control @error('nama') is-invalid @enderror"
-                               value="{{ old('nama') }}" required>
+                               value="{{ old('nama') }}">
                         @error('nama') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
 
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Jenis Kelamin</label>
-                            <select name="jenis_kelamin" class="form-select @error('jenis_kelamin') is-invalid @enderror" required>
+                            <select name="jenis_kelamin" class="form-select @error('jenis_kelamin') is-invalid @enderror">
                                 <option value="">Pilih...</option>
                                 <option value="L" {{ old('jenis_kelamin')=='L'?'selected':'' }}>Laki-laki</option>
                                 <option value="P" {{ old('jenis_kelamin')=='P'?'selected':'' }}>Perempuan</option>
@@ -70,36 +70,9 @@
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Tanggal Lahir</label>
                             <input type="date" name="tanggal_lahir" class="form-control @error('tanggal_lahir') is-invalid @enderror"
-                                   value="{{ old('tanggal_lahir') }}" required>
+                                   value="{{ old('tanggal_lahir') }}">
                             @error('tanggal_lahir') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Berat Badan (kg)</label>
-                            <input type="number" step="0.1" name="berat_badan" class="form-control @error('berat_badan') is-invalid @enderror"
-                                   value="{{ old('berat_badan') }}" required>
-                            @error('berat_badan') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                        </div>
-
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Tinggi Badan (cm)</label>
-                            <input type="number" step="0.1" name="tinggi_badan" class="form-control @error('tinggi_badan') is-invalid @enderror"
-                                   value="{{ old('tinggi_badan') }}" required>
-                            @error('tinggi_badan') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                        </div>
-                    </div>
-
-                    <div class="mb-4">
-                        <label class="form-label">Tingkat Aktivitas</label>
-                        <select name="tingkat_aktivitas" class="form-select @error('tingkat_aktivitas') is-invalid @enderror" required>
-                            <option value="">Pilih...</option>
-                            <option value="ringan" {{ old('tingkat_aktivitas')=='ringan'?'selected':'' }}>Ringan (jarang olahraga)</option>
-                            <option value="sedang" {{ old('tingkat_aktivitas')=='sedang'?'selected':'' }}>Sedang (sekolah + bermain)</option>
-                            <option value="berat"  {{ old('tingkat_aktivitas')=='berat'?'selected':'' }}>Berat (olahraga rutin)</option>
-                        </select>
-                        @error('tingkat_aktivitas') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
 
                     <button type="submit" class="btn btn-hijau w-100">

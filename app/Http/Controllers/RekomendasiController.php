@@ -41,19 +41,27 @@ class RekomendasiController extends Controller
     public function proses(Request $request)
     {
         $request->validate([
-            'nama'          => ['required', 'string', 'max:100'],
+            'nama' => ['required', 'string', 'max:100'],
+
             'jenis_kelamin' => ['required', 'in:L,P'],
+
             'tanggal_lahir' => [
                 'required',
                 'date',
-                'before:today',
-                'after:' . now()->subYears(18)->toDateString(),
+                'before:' . now()->subYears(4)->toDateString(),   // minimal usia 4 tahun
+                'after:' . now()->subYears(16)->toDateString(),   // maksimal usia 16 tahun
             ],
-            'berat_badan' => 'required|numeric|min:1',
-            'tinggi_badan' => 'required|numeric|min:1',
-            'tingkat_aktivitas' => 'required',
+
         ], [
-            'tanggal_lahir.after' => 'Sistem ini ditujukan untuk anak usia 1–18 tahun.',
+            'nama.required' => 'Nama anak wajib diisi.',
+
+            'jenis_kelamin.required' => 'Jenis kelamin wajib dipilih.',
+
+            'tanggal_lahir.required' => 'Tanggal lahir wajib diisi.',
+
+            'tanggal_lahir.before' => 'Usia anak minimal 4 tahun.',
+
+            'tanggal_lahir.after' => 'Usia anak maksimal 16 tahun.',
         ]);
 
         // ── STEP 1: Simpan data anak ──────────────────────────
@@ -61,9 +69,6 @@ class RekomendasiController extends Controller
             'nama'          => $request->nama,
             'jenis_kelamin' => $request->jenis_kelamin,
             'tanggal_lahir' => $request->tanggal_lahir,
-            'berat_badan' => $request->berat_badan,
-            'tinggi_badan' => $request->tinggi_badan,
-            'tingkat_aktivitas' => $request->tingkat_aktivitas,
         ]);
 
         // ── STEP 2: Hitung kebutuhan kalori (AKG 2019) ───────
@@ -102,22 +107,96 @@ class RekomendasiController extends Controller
                 'nilai_preferensi'        => $item['skor'],
                 'bobot_kriteria'          => $item['bobot_kriteria'],
                 'consistency_ratio'       => $cr,
-                'fahp_trace' => $item['fahp_trace'],
+                'fahp_trace'              => $item['fahp_trace'],
             ]);
 
             $rekomendasiIds[$item['ranking']] = $rekomendasi->id;
         }
 
-        // ── STEP 7: Tampilkan hasil ───────────────────────────
+        // ── STEP 7: Redirect ke halaman hasil (PRG pattern) ──
+        return redirect()->route('rekomendasi.hasil', $anak->id);
+    }
+
+    /**
+     * GET /rekomendasi/hasil/{anak}
+     *
+     * Rekonstruksi data tampilan dari DB (tanpa kalkulasi ulang Fuzzy AHP).
+     * Data $ranked disusun ulang dari tabel rekomendasi yang sudah tersimpan.
+     */
+    public function hasil(Anak $anak)
+    {
+        // Ambil 3 paket rekomendasi terakhir untuk anak ini (sesi terbaru)
+        $tanggal = Rekomendasi::where('anak_id', $anak->id)
+            ->latest('created_at')
+            ->value('tanggal_rekomendasi');
+
+        $rekomendasis = Rekomendasi::withAllMenus()
+            ->where('anak_id', $anak->id)
+            ->whereDate('tanggal_rekomendasi', $tanggal)
+            ->orderBy('ranking')
+            ->get();
+
+        if ($rekomendasis->isEmpty()) {
+            return redirect()->route('rekomendasi.index')
+                ->with('error', 'Data rekomendasi tidak ditemukan.');
+        }
+
+        // Susun $ranked agar kompatibel dengan hasil.blade.php yang sudah ada
+        $ranked = $rekomendasis->map(function (Rekomendasi $rek) {
+            $menus    = $rek->semuaMenu();
+            $gizi     = $this->hitungTotalGizi($menus);
+
+            return [
+                'ranking'        => $rek->ranking,
+                'skor'           => (float) $rek->nilai_preferensi,
+                'bobot_kriteria' => $rek->bobot_kriteria,
+                'fahp_trace'     => $rek->fahp_trace,
+                'paket'          => [
+                    'menus'      => $menus,
+                    'total_gizi' => $gizi,
+                ],
+            ];
+        })->values()->all();
+
+        $totalKalori    = (float) $rekomendasis->first()->kebutuhan_kalori_harian;
+        $rekomendasiIds = $rekomendasis->pluck('id', 'ranking')->all();
+
+        // Cek apakah sesi ini sudah ada pemilihan
+        $pemilihan = \App\Models\PemilihanMenu::whereIn('rekomendasi_id', $rekomendasis->pluck('id'))
+            ->latest()
+            ->first();
+
         return view('rekomendasi.hasil', [
             'anak'           => $anak,
             'ranked'         => $ranked,
-            'distribusi'     => $distribusi,
             'totalKalori'    => round($totalKalori, 2),
             'rekomendasiIds' => $rekomendasiIds,
             'labelWaktu'     => $this->labelWaktu(),
+            'paketDipilih'   => $pemilihan?->ranking_dipilih,  // null jika belum memilih
         ]);
     }
+
+    /**
+     * Hitung total gizi 6 menu dalam satu paket dari relasi kandunganGizi.
+     * Dipakai oleh hasil() untuk rekonstruksi tanpa memanggil Fuzzy AHP ulang.
+     */
+    private function hitungTotalGizi(array $menus): array
+    {
+        $total = ['kalori' => 0, 'karbohidrat' => 0, 'protein' => 0, 'serat' => 0];
+
+        foreach ($menus as $menu) {
+            if ($menu?->kandunganGizi) {
+                $g = $menu->kandunganGizi;
+                $total['kalori']      += (float) $g->energi_kkal;
+                $total['karbohidrat'] += (float) $g->karbohidrat_gram;
+                $total['protein']     += (float) $g->protein_gram;
+                $total['serat']       += (float) $g->serat_gram;
+            }
+        }
+
+        return $total;
+    }
+    
 
     /**
      * Label tampilan untuk 6 waktu makan.

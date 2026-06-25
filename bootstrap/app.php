@@ -12,8 +12,8 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
-        'admin.key' => \App\Http\Middleware\AdminKeyMiddleware::class,
-    ]);
+            'admin.auth' => \App\Http\Middleware\AdminAuthMiddleware::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

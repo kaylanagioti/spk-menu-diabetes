@@ -56,6 +56,19 @@
         </div>
     </div>
 
+    {{-- Alert sukses setelah memilih paket --}}
+    @if(session('sukses_pilih'))
+    <div class="row mb-3">
+        <div class="col-md-8 mx-auto">
+            <div class="alert alert-success alert-dismissible fade show d-flex align-items-center gap-2" role="alert">
+                <span style="font-size:1.2rem">&#10003;</span>
+                <div>{{ session('sukses_pilih') }}</div>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+            </div>
+        </div>
+    </div>
+    @endif
+
     {{-- === Rekomendasi Menu Harian === --}}
     <h2 class="text-center mb-4">Hasil Rekomendasi Paket Menu Harian</h2>
 
@@ -64,8 +77,9 @@
     @foreach($ranked as $item)
 
         @php
-            $paket = $item['paket'];
-            $gizi = $paket['total_gizi'];
+            $paket      = $item['paket'];
+            $gizi       = $paket['total_gizi'];
+            $iniDipilih = ($paketDipilih !== null && (int)$paketDipilih === $item['ranking']);
         @endphp
 
         <div class="col-12">
@@ -81,6 +95,9 @@
                             🥈 Peringkat 2
                         @else
                             🥉 Peringkat 3
+                        @endif
+                        @if($iniDipilih)
+                            <span class="badge ms-2" style="background:#2d7a4f;font-size:.65rem;vertical-align:middle">✓ Paket Dipilih</span>
                         @endif
                     </h3>
 
@@ -150,30 +167,21 @@
                 </div>
 
                 {{-- Tombol pilih paket --}}
-                <form action="{{ route('rekomendasi.pilih') }}"
-                      method="POST"
-                      class="mt-4">
-
-                    @csrf
-
-                    <input type="hidden"
-                           name="rekomendasi_id"
-                           value="{{ $rekomendasiIds[$item['ranking']] ?? '' }}">
-
-                    <input type="hidden"
-                           name="anak_id"
-                           value="{{ $anak->id }}">
-
-                    <input type="hidden"
-                           name="ranking_dipilih"
-                           value="{{ $item['ranking'] }}">
-
-                    <button type="submit"
-                            class="btn btn-success">
-                        Pilih Paket Ini
-                    </button>
-
-                </form>
+                @if($iniDipilih)
+                    <div class="mt-4">
+                        <button class="btn btn-success" disabled>✓ Paket Ini Dipilih</button>
+                    </div>
+                @elseif($paketDipilih === null)
+                    <form action="{{ route('rekomendasi.pilih') }}"
+                          method="POST"
+                          class="mt-4">
+                        @csrf
+                        <input type="hidden" name="rekomendasi_id" value="{{ $rekomendasiIds[$item['ranking']] ?? '' }}">
+                        <input type="hidden" name="anak_id"         value="{{ $anak->id }}">
+                        <input type="hidden" name="ranking_dipilih" value="{{ $item['ranking'] }}">
+                        <button type="submit" class="btn btn-success">Pilih Paket Ini</button>
+                    </form>
+                @endif
 
             </div>
 
@@ -219,5 +227,6 @@
 
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

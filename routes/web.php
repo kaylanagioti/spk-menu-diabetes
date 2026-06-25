@@ -7,18 +7,31 @@ use App\Http\Controllers\Admin\KandunganGiziController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PemilihanController;
 use App\Http\Controllers\Admin\RiwayatPemilihanController;
+use App\Http\Controllers\Admin\AdminLoginController;
+
 
 // ── PUBLIC — Orang Tua ────────────────────────────────────────────
-Route::get( '/rekomendasi',        [RekomendasiController::class, 'index'])  ->name('rekomendasi.index');
-Route::post('/rekomendasi/proses', [RekomendasiController::class, 'proses']) ->name('rekomendasi.proses');
-Route::post(
-    '/rekomendasi/pilih',
-    [PemilihanController::class, 'store']
-)->name('rekomendasi.pilih');
+Route::get( '/rekomendasi',                  [RekomendasiController::class, 'index'])  ->name('rekomendasi.index');
+Route::post('/rekomendasi/proses',           [RekomendasiController::class, 'proses']) ->name('rekomendasi.proses');
+Route::get( '/rekomendasi/hasil/{anak}',     [RekomendasiController::class, 'hasil'])  ->name('rekomendasi.hasil');
+Route::post('/rekomendasi/pilih',            [PemilihanController::class,  'store'])   ->name('rekomendasi.pilih');
 
-// ── ADMIN — Key-based access (/admin?key=admin123) ────────────────
+// ── ADMIN ) ────────────────
+Route::prefix('admin')->name('admin.')->group(function () {
+
+    Route::get('/login', [AdminLoginController::class, 'showForm'])
+        ->name('login.form');
+
+    Route::post('/login', [AdminLoginController::class, 'login'])
+        ->name('login');
+
+    Route::post('/logout', [AdminLoginController::class, 'logout'])
+        ->name('logout');
+
+});
+
 Route::prefix('admin')
-     ->middleware('admin.key')
+     ->middleware('admin.auth')
      ->name('admin.')
      ->group(function () {
 

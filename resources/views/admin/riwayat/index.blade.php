@@ -6,7 +6,7 @@
 <div class="d-flex justify-content-between align-items-center mb-4"
      style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px">
     <h2 style="margin:0">Riwayat Pemilihan Menu</h2>
-    <a href="{{ route('admin.dashboard', ['key' => request('key')]) }}"
+    <a href="{{ route('admin.dashboard') }}"
        class="btn btn-gray">← Kembali</a>
 </div>
 
@@ -63,7 +63,7 @@
                     </td>
 
                     <td style="text-align:center">
-                        <a href="{{ route('admin.riwayat.show', [$item->id, 'key' => request('key')]) }}"
+                        <a href="{{ route('admin.riwayat.show', $item->id) }}"
                            class="btn btn-blue"
                            style="font-size:12px; padding:5px 12px; white-space:nowrap">
                             🔍 Lihat Proses
