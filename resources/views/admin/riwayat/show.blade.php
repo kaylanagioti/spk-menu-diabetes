@@ -15,18 +15,6 @@
                   <div style="background:#2c7a2c;height:8px;border-radius:4px;width:'.$w.'%"></div>
                 </div>';
     }
-    $trace = $rekTerpilih->fahp_trace ?? [];
-
-    $raw = $trace['raw'] ?? [];
-    $normalized = $trace['normalized'] ?? [];
-    $weighted = $trace['weighted'] ?? [];
-
-    $criteria = [
-        'kalori' => 'Deviasi Kalori',
-        'karbohidrat' => 'Karbohidrat',
-        'protein' => 'Protein',
-        'serat' => 'Serat',
-    ];
 @endphp
 
 {{-- ── PAGE HEADER ──────────────────────────────────────────────────── --}}
@@ -236,459 +224,378 @@
 {{-- SEKSI 6 — BOBOT FUZZY AHP & CONSISTENCY RATIO                      --}}
 {{-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ --}}
 <div class="card" style="border-left:4px solid #9673a6; margin-bottom:20px">
-    <h3 style="margin:0 0 8px; color:#9673a6">6. Bobot Kriteria Fuzzy AHP &amp; Consistency Ratio</h3>
+    <h3 style="margin:0 0 8px; color:#9673a6">6. Hasil Pembobotan Fuzzy AHP</h3>
     <p style="color:#666; font-size:13px; margin:0 0 16px">
-        Bobot diperoleh melalui metode Chang's Extent Analysis (1996) dengan bilangan fuzzy segitiga (TFN).
-        Data ini disimpan sebagai snapshot pada saat proses rekomendasi dijalankan.
+        Bagian ini menampilkan ringkasan bobot akhir setiap kriteria yang dihasilkan menggunakan 
+        metode Fuzzy AHP (Chang's Extent Analysis). Proses pembentukan bobot secara lengkap ditampilkan pada Tahap 1–6 berikutnya.
+    </p>
+</div>
+
+{{-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ --}}
+{{-- TAHAP 1 — MATRIKS PERBANDINGAN BERPASANGAN                          --}}
+{{-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ --}}
+<div class="card" style="border-left:4px solid #9673a6; margin-bottom:20px">
+    <h3 style="margin:0 0 8px; color:#9673a6">🔹 Tahap 1. Matriks Perbandingan Berpasangan</h3>
+    <p style="color:#666; font-size:13px; margin:0 0 16px">
+        Matriks perbandingan berpasangan disusun menggunakan skala Saaty
+        untuk menentukan tingkat kepentingan relatif antar kriteria.
     </p>
 
-    {{-- CR Badge --}}
-    <div style="margin-bottom:16px">
-        <span style="
-            display:inline-flex; align-items:center; gap:8px;
-            padding:8px 16px; border-radius:8px; font-size:14px;
-            background:{{ $cr < 0.1 ? '#d4edda' : '#fdecea' }};
-            color:{{ $cr < 0.1 ? '#155724' : '#c0392b' }};
-        ">
-            <strong>Consistency Ratio (CR) = {{ number_format($cr, 4) }}</strong>
-            @if($cr < 0.1)
-                &nbsp;✓ Konsisten (CR &lt; 0,10) &mdash; matriks perbandingan dinyatakan valid
-            @else
-                &nbsp;✗ Tidak konsisten (CR ≥ 0,10)
-            @endif
-        </span>
+    @if(!empty($calculationDetails['pairwise']) && !empty($calculationDetails['criteria']))
+    <div style="overflow-x:auto">
+        <table>
+            <thead>
+                <tr style="background:#f3eef7">
+                    <th></th>
+                    @foreach($calculationDetails['criteria'] as $col)
+                        <th style="text-align:center">{{ ucfirst($col) }}</th>
+                    @endforeach
+                </tr>
+            </thead>
+            <tbody>
+            @foreach($calculationDetails['pairwise'] as $i => $row)
+                <tr>
+                    <th style="background:#f3eef7">
+                        {{ ucfirst($calculationDetails['criteria'][$i]) }}
+                    </th>
+                    @foreach($row as $nilai)
+                        <td style="text-align:center; font-family:monospace">
+                            {{ number_format($nilai, 2) }}
+                        </td>
+                    @endforeach
+                </tr>
+            @endforeach
+            </tbody>
+        </table>
+    </div>
+    @else
+    <p style="color:#999; font-style:italic; font-size:13px">Data matriks tidak tersedia.</p>
+    @endif
+</div>
+
+{{-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ --}}
+{{-- TAHAP 2 — CONSISTENCY RATIO                                         --}}
+{{-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ --}}
+<div class="card" style="border-left:4px solid #9673a6; margin-bottom:20px">
+    <h3 style="margin:0 0 8px; color:#9673a6">🔹 Tahap 2. Consistency Ratio</h3>
+    <p style="color:#666; font-size:13px; margin:0 0 12px">
+        Matriks dianggap konsisten apabila nilai Consistency Ratio (CR) kurang dari 0,10.
+    </p>
+
+    @php $crVal = $calculationDetails['consistency_ratio'] ?? $cr; @endphp
+    <div style="
+        display:inline-flex; align-items:center; gap:10px;
+        padding:10px 18px; border-radius:8px; font-size:14px;
+        background:{{ $crVal < 0.1 ? '#d4edda' : '#fdecea' }};
+        color:{{ $crVal < 0.1 ? '#155724' : '#c0392b' }};
+    ">
+        <strong>CR = {{ number_format($crVal, 4) }}</strong>
+        &nbsp;—&nbsp;
+        @if($crVal < 0.1)
+            ✓ Matriks perbandingan memenuhi syarat konsistensi.
+        @else
+            ✗ Matriks belum konsisten.
+        @endif
+    </div>
+</div>
+
+{{-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ --}}
+{{-- TAHAP 3 — KONVERSI TRIANGULAR FUZZY NUMBER (TFN)                    --}}
+{{-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ --}}
+<div class="card" style="border-left:4px solid #9673a6; margin-bottom:20px">
+    <h3 style="margin:0 0 8px; color:#9673a6">🔹 Tahap 3. Konversi Triangular Fuzzy Number (TFN)</h3>
+    <p style="color:#666; font-size:13px; margin:0 0 10px">
+        Setiap nilai pada matriks perbandingan dikonversi menjadi
+        Triangular Fuzzy Number <strong>(L, M, U)</strong>.
+    </p>
+    <div style="display:flex; gap:8px; margin-bottom:14px">
+        <span style="background:#6c757d; color:white; padding:2px 10px; border-radius:10px; font-size:12px">L = Lower</span>
+        <span style="background:#6c757d; color:white; padding:2px 10px; border-radius:10px; font-size:12px">M = Middle</span>
+        <span style="background:#6c757d; color:white; padding:2px 10px; border-radius:10px; font-size:12px">U = Upper</span>
     </div>
 
+    @if(!empty($calculationDetails['fuzzy_matrix']) && !empty($calculationDetails['criteria']))
+    <div style="overflow-x:auto">
+        <table>
+            <thead>
+                <tr style="background:#f3eef7">
+                    <th></th>
+                    @foreach($calculationDetails['criteria'] as $col)
+                        <th style="text-align:center">{{ ucfirst($col) }}</th>
+                    @endforeach
+                </tr>
+            </thead>
+            <tbody>
+            @foreach($calculationDetails['fuzzy_matrix'] as $i => $row)
+                <tr>
+                    <th style="background:#f3eef7; white-space:nowrap">
+                        {{ ucfirst($calculationDetails['criteria'][$i]) }}
+                    </th>
+                    @foreach($row as $cell)
+                        <td style="text-align:center; font-family:monospace; font-size:12px; line-height:1.8">
+                            <span style="color:#888; font-size:11px">L</span> {{ number_format($cell[0], 2) }}<br>
+                            <span style="color:#888; font-size:11px">M</span> {{ number_format($cell[1], 2) }}<br>
+                            <span style="color:#888; font-size:11px">U</span> {{ number_format($cell[2], 2) }}
+                        </td>
+                    @endforeach
+                </tr>
+            @endforeach
+            </tbody>
+        </table>
+    </div>
+    @else
+    <p style="color:#999; font-style:italic; font-size:13px">Data TFN tidak tersedia.</p>
+    @endif
+</div>
+
+@php
+    // Shared: label kriteria untuk Tahap 4–6
+    $namaKriteria = ['kalori'=>'Kalori','karbohidrat'=>'Karbohidrat','protein'=>'Protein','serat'=>'Serat'];
+    $cd           = $calculationDetails ?? [];
+    $cdCriteria   = $cd['criteria']         ?? [];
+    $cdFuzzy      = $cd['fuzzy_matrix']     ?? [];
+    $cdSi         = $cd['synthetic_extent'] ?? [];
+    $cdDegMatrix  = $cd['degree_matrix']    ?? [];
+    $cdDPrime     = $cd['d_prime']          ?? [];
+    $cdWeights    = $cd['weights']          ?? [];
+@endphp
+
+{{-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ --}}
+{{-- TAHAP 4 — SYNTHETIC EXTENT (Si)                                     --}}
+{{-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ --}}
+<div class="card" style="border-left:4px solid #9673a6; margin-bottom:20px">
+    <h3 style="margin:0 0 8px; color:#9673a6">Tahap 4. Perhitungan Synthetic Extent (S<sub>i</sub>)</h3>
+    <p style="color:#666; font-size:13px; margin:0 0 4px">
+        Nilai <em>Synthetic Extent</em> (S<sub>i</sub>) dihitung dari penjumlahan TFN setiap baris
+        matriks fuzzy dibagi total seluruh matriks, menggunakan formula Chang (1996):
+    </p>
+    <p style="color:#555; font-size:13px; font-family:monospace; margin:0 0 16px;
+              background:#f8f3ff; padding:8px 12px; border-radius:6px; display:inline-block">
+        S<sub>i</sub> = (Σl<sub>baris</sub> / Σu<sub>total</sub> &nbsp;;&nbsp;
+                         Σm<sub>baris</sub> / Σm<sub>total</sub> &nbsp;;&nbsp;
+                         Σu<sub>baris</sub> / Σl<sub>total</sub>)
+    </p>
+
+    @if(!empty($cdSi) && !empty($cdCriteria))
     <table>
         <thead>
             <tr style="background:#f3eef7">
                 <th>Kriteria</th>
-                <th style="text-align:right">Bobot (W)</th>
-                <th style="text-align:right">Persentase</th>
-                <th style="width:220px">Visualisasi Bobot</th>
+                <th style="text-align:right">Σ l (baris)</th>
+                <th style="text-align:right">Σ m (baris)</th>
+                <th style="text-align:right">Σ u (baris)</th>
+                <th style="text-align:center">S<sub>i</sub> = (l, m, u)</th>
             </tr>
         </thead>
         <tbody>
+        @foreach($cdCriteria as $idx => $key)
         @php
-            $urutan = ['karbohidrat','kalori','serat','protein'];
-            $namaK  = ['kalori'=>'Kalori','karbohidrat'=>'Karbohidrat','protein'=>'Protein','serat'=>'Serat'];
+            $si   = $cdSi[$idx] ?? [0,0,0];
+            // Hitung jumlah baris dari fuzzy_matrix
+            $rowL = isset($cdFuzzy[$idx]) ? array_sum(array_column($cdFuzzy[$idx], 0)) : 0;
+            $rowM = isset($cdFuzzy[$idx]) ? array_sum(array_column($cdFuzzy[$idx], 1)) : 0;
+            $rowU = isset($cdFuzzy[$idx]) ? array_sum(array_column($cdFuzzy[$idx], 2)) : 0;
         @endphp
-        @foreach($urutan as $key)
-            @if(isset($bobot[$key]))
-            @php $w = (float)$bobot[$key]; @endphp
-            <tr>
-                <td><strong>{{ $namaK[$key] }}</strong></td>
-                <td style="text-align:right; font-family:monospace">{{ number_format($w, 6) }}</td>
-                <td style="text-align:right; font-weight:bold">{{ number_format($w * 100, 2) }}%</td>
-                <td>
-                    <div style="background:#e9ecef; border-radius:4px; height:12px; width:100%">
-                        <div style="background:#9673a6; height:12px; border-radius:4px;
-                                    width:{{ number_format($w * 100, 1) }}%"></div>
-                    </div>
-                </td>
-            </tr>
-            @endif
+        <tr>
+            <td><strong>{{ $namaKriteria[$key] ?? $key }}</strong></td>
+            <td style="text-align:right; font-family:monospace">{{ number_format($rowL, 4) }}</td>
+            <td style="text-align:right; font-family:monospace">{{ number_format($rowM, 4) }}</td>
+            <td style="text-align:right; font-family:monospace">{{ number_format($rowU, 4) }}</td>
+            <td style="text-align:center; font-family:monospace; font-size:13px; font-weight:bold">
+                ({{ number_format($si[0], 4) }} ; {{ number_format($si[1], 4) }} ; {{ number_format($si[2], 4) }})
+            </td>
+        </tr>
         @endforeach
         </tbody>
-        <tfoot>
-            <tr style="background:#f9f9f9; font-weight:bold">
-                <td>Total</td>
-                <td style="text-align:right; font-family:monospace">
-                    {{ number_format(array_sum(array_values($bobot)), 6) }}
-                </td>
-                <td style="text-align:right">100,00%</td>
-                <td></td>
-            </tr>
-        </tfoot>
     </table>
-</div>
-<div class="accordion mb-4" id="accordionFahp">
 
-    <div class="accordion-item">
-
-        <h2 class="accordion-header">
-
-            <button class="accordion-button collapsed"
-                    type="button"
-                    data-bs-toggle="collapse"
-                    data-bs-target="#collapseFahp">
-
-                Detail Pembobotan Fuzzy AHP
-
-            </button>
-
-        </h2>
-
-        <div id="collapseFahp"
-             class="accordion-collapse collapse"
-             data-bs-parent="#accordionFahp">
-
-            <div class="accordion-body">
-
-                {{-- ======================================================= --}}
-                {{-- Tahap 1 --}}
-                {{-- ======================================================= --}}
-
-                <div class="card border-0 shadow-sm mb-4">
-
-                    <div class="card-header bg-white border-bottom">
-
-                        <strong>🔹 Tahap 1. Matriks Perbandingan Berpasangan</strong>
-
-                    </div>
-
-                    <div class="card-body">
-
-                        <p class="text-muted small mb-3">
-                            Matriks perbandingan berpasangan disusun menggunakan skala Saaty
-                            untuk menentukan tingkat kepentingan relatif antar kriteria.
-                        </p>
-
-                        <div class="table-responsive">
-
-                            <table class="table table-bordered table-sm text-center align-middle">
-
-                                <thead class="table-light">
-
-                                <tr>
-
-                                    <th></th>
-
-                                    @foreach($calculationDetails['criteria'] as $criteria)
-                                        <th>{{ ucfirst($criteria) }}</th>
-                                    @endforeach
-
-                                </tr>
-
-                                </thead>
-
-                                <tbody>
-
-                                @foreach($calculationDetails['pairwise'] as $index => $row)
-
-                                    <tr>
-
-                                        <th class="table-light">
-
-                                            {{ ucfirst($calculationDetails['criteria'][$index]) }}
-
-                                        </th>
-
-                                        @foreach($row as $nilai)
-
-                                            <td>{{ number_format($nilai,2) }}</td>
-
-                                        @endforeach
-
-                                    </tr>
-
-                                @endforeach
-
-                                </tbody>
-
-                            </table>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-
-
-                {{-- ======================================================= --}}
-                {{-- Tahap 2 --}}
-                {{-- ======================================================= --}}
-
-                <div class="card border-0 shadow-sm mb-4">
-
-                    <div class="card-header bg-white border-bottom">
-
-                        <strong>🔹 Tahap 2. Consistency Ratio</strong>
-
-                    </div>
-
-                    <div class="card-body">
-
-                        <p class="text-muted small">
-
-                            Matriks dianggap konsisten apabila nilai Consistency Ratio (CR)
-                            kurang dari 0,10.
-
-                        </p>
-
-                        <div class="alert {{ $calculationDetails['consistency_ratio'] < 0.1 ? 'alert-success' : 'alert-danger' }} mb-0">
-
-                            <strong>
-
-                                CR = {{ number_format($calculationDetails['consistency_ratio'],4) }}
-
-                            </strong>
-
-                            <br>
-
-                            @if($calculationDetails['consistency_ratio'] < 0.1)
-
-                                Matriks perbandingan memenuhi syarat konsistensi.
-
-                            @else
-
-                                Matriks belum konsisten.
-
-                            @endif
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-
-
-                {{-- ======================================================= --}}
-                {{-- Tahap 3 --}}
-                {{-- ======================================================= --}}
-
-                <div class="card">
-
-                    <div class="card-header bg-light">
-
-                        <strong>🔹 Tahap 3. Konversi Triangular Fuzzy Number (TFN)</strong>
-
-                    </div>
-
-                    <div class="card-body">
-
-                        <p class="text-muted small">
-
-                            Setiap nilai pada matriks perbandingan dikonversi menjadi
-                            Triangular Fuzzy Number (L, M, U).
-
-                        </p>
-
-                        <div class="mb-3">
-
-                            <span class="badge bg-secondary">L = Lower</span>
-
-                            <span class="badge bg-secondary">M = Middle</span>
-
-                            <span class="badge bg-secondary">U = Upper</span>
-
-                        </div>
-
-                        <div class="table-responsive">
-
-                            <table class="table table-bordered table-sm text-center align-middle">
-
-                                <thead class="table-light">
-
-                                <tr>
-
-                                    <th></th>
-
-                                    @foreach($calculationDetails['criteria'] as $criteria)
-
-                                        <th>{{ ucfirst($criteria) }}</th>
-
-                                    @endforeach
-
-                                </tr>
-
-                                </thead>
-
-                                <tbody>
-
-                                @foreach($calculationDetails['fuzzy_matrix'] as $i => $row)
-
-                                    <tr>
-
-                                        <th class="table-light">
-
-                                            {{ ucfirst($calculationDetails['criteria'][$i]) }}
-
-                                        </th>
-
-                                        @foreach($row as $cell)
-
-                                            <td class="font-monospace">
-
-                                                <strong>L</strong> {{ number_format($cell[0],2) }}
-
-                                                <br>
-
-                                                <strong>M</strong> {{ number_format($cell[1],2) }}
-
-                                                <br>
-
-                                                <strong>U</strong> {{ number_format($cell[2],2) }}
-
-                                            </td>
-
-                                        @endforeach
-
-                                    </tr>
-
-                                @endforeach
-
-                                </tbody>
-
-                            </table>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
-
+    @php
+        // Total matriks dari fuzzy_matrix
+        $totL = 0; $totM = 0; $totU = 0;
+        foreach ($cdFuzzy as $row) {
+            $totL += array_sum(array_column($row, 0));
+            $totM += array_sum(array_column($row, 1));
+            $totU += array_sum(array_column($row, 2));
+        }
+    @endphp
+    <p style="margin:10px 0 0; font-size:13px; color:#666">
+        Jumlah total matriks: &nbsp;
+        <span style="font-family:monospace">
+            Σl = {{ number_format($totL, 4) }} &nbsp;|&nbsp;
+            Σm = {{ number_format($totM, 4) }} &nbsp;|&nbsp;
+            Σu = {{ number_format($totU, 4) }}
+        </span>
+    </p>
+    @else
+    {{-- TODO: $calculationDetails['synthetic_extent'] tidak tersedia --}}
+    <p style="color:#999; font-style:italic; font-size:13px">
+        Data Synthetic Extent tidak tersedia.
+    </p>
+    @endif
 </div>
 
 {{-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ --}}
-{{-- SEKSI 7 — JEJAK PERHITUNGAN FUZZY AHP                           --}}
+{{-- TAHAP 5 — DEGREE OF POSSIBILITY V(Si ≥ Sj) dan d'(Ai)              --}}
 {{-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ --}}
-<div class="card" style="border-left:4px solid #6f42c1; margin-bottom:20px">
-
-    <h3 style="margin:0 0 8px; color:#6f42c1">
-        7. Jejak Perhitungan Fuzzy AHP
-    </h3>
-
-    <p style="color:#666; font-size:13px; margin-bottom:18px">
-        Nilai setiap kriteria dinormalisasi menggunakan metode Min-Max sesuai
-        jenis kriterianya, kemudian dikalikan dengan bobot Fuzzy AHP untuk
-        memperoleh nilai preferensi paket menu.
+<div class="card" style="border-left:4px solid #9673a6; margin-bottom:20px">
+    <h3 style="margin:0 0 8px; color:#9673a6">Tahap 5. Degree of Possibility V(S<sub>i</sub> ≥ S<sub>j</sub>) dan d'(A<sub>i</sub>)</h3>
+    <p style="color:#666; font-size:13px; margin:0 0 16px">
+        <em>Degree of Possibility</em> mengukur sejauh mana S<sub>i</sub> melebihi S<sub>j</sub>.
+        Nilai d'(A<sub>i</sub>) adalah nilai minimum pada tiap baris (j ≠ i),
+        yang menjadi bobot mentah kriteria sebelum dinormalisasi.
     </p>
 
-    <table>
-
-        <thead>
-        <tr>
-            <th></th>
-
-            @foreach($calculationDetails['criteria'] as $nama)
-                <th>{{ ucfirst($nama) }}</th>
-            @endforeach
-
-        </tr>
-        </thead>
-
-        <tbody>
-
-        @foreach($calculationDetails['fuzzy_matrix'] as $i => $row)
-
-        <tr>
-
-            <th>
-                {{ ucfirst($calculationDetails['criteria'][$i]) }}
-            </th>
-
-            @foreach($row as $cell)
-
-                <td style="font-family:monospace">
-
-                    (
-                    {{ number_format($cell[0],2) }},
-                    {{ number_format($cell[1],2) }},
-                    {{ number_format($cell[2],2) }}
-                    )
-
+    @if(!empty($cdDegMatrix) && !empty($cdCriteria))
+    {{-- Matriks V(Si ≥ Sj) --}}
+    <div style="overflow-x:auto; margin-bottom:16px">
+        <table>
+            <thead>
+                <tr style="background:#f3eef7">
+                    <th style="min-width:120px">Kriteria</th>
+                    @foreach($cdCriteria as $col)
+                    <th style="text-align:center; font-size:13px">
+                        V ≥ {{ $namaKriteria[$col] ?? $col }}
+                    </th>
+                    @endforeach
+                    <th style="text-align:center; background:#ede9f7; font-size:13px">
+                        d'(A<sub>i</sub>) = min
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach($cdCriteria as $i => $rowKey)
+            <tr>
+                <td><strong>{{ $namaKriteria[$rowKey] ?? $rowKey }}</strong></td>
+                @foreach($cdCriteria as $j => $colKey)
+                @php
+                    $cell = $cdDegMatrix[$i][$j] ?? '-';
+                    $isDash = ($cell === '-');
+                @endphp
+                <td style="text-align:center; font-family:monospace; font-size:13px;
+                            color:{{ $isDash ? '#ccc' : '#333' }};
+                            background:{{ $isDash ? '#fafafa' : 'transparent' }}">
+                    {{ $isDash ? '—' : number_format((float)$cell, 4) }}
                 </td>
-
+                @endforeach
+                <td style="text-align:center; font-family:monospace; font-size:13px;
+                            font-weight:bold; background:#ede9f7; color:#6a3d8f">
+                    {{ isset($cdDPrime[$i]) ? number_format($cdDPrime[$i], 4) : '—' }}
+                </td>
+            </tr>
             @endforeach
+            </tbody>
+        </table>
+    </div>
 
-        </tr>
-
+    {{-- Penjelasan min per baris --}}
+    <div style="background:#f8f3ff; border-radius:6px; padding:10px 14px; font-size:13px; color:#555">
+        @foreach($cdCriteria as $i => $key)
+        @php
+            $others = [];
+            foreach ($cdCriteria as $j => $jKey) {
+                if ($i === $j) continue;
+                $v = $cdDegMatrix[$i][$j] ?? null;
+                if ($v !== '-' && $v !== null) $others[] = number_format((float)$v, 4);
+            }
+            $dp = isset($cdDPrime[$i]) ? number_format($cdDPrime[$i], 4) : '—';
+        @endphp
+        <div style="margin-bottom:4px">
+            d'(<strong>{{ $namaKriteria[$key] ?? $key }}</strong>) =
+            min({{ implode(' ; ', $others) }}) = <strong>{{ $dp }}</strong>
+        </div>
         @endforeach
+    </div>
 
-        </tbody>
+    @else
+    {{-- TODO: $calculationDetails['degree_matrix'] atau ['d_prime'] tidak tersedia --}}
+    <p style="color:#999; font-style:italic; font-size:13px">
+        Data Degree of Possibility tidak tersedia.
+    </p>
+    @endif
+</div>
 
-        <tfoot>
+{{-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ --}}
+{{-- TAHAP 6 — NORMALISASI BOBOT AKHIR                                   --}}
+{{-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ --}}
+<div class="card" style="border-left:4px solid #9673a6; margin-bottom:20px">
+    <h3 style="margin:0 0 8px; color:#9673a6">Tahap 6. Normalisasi Bobot Akhir</h3>
+    <p style="color:#666; font-size:13px; margin:0 0 4px">
+        Bobot akhir diperoleh dengan menormalisasi d'(A<sub>i</sub>) sehingga jumlahnya sama dengan 1:
+    </p>
+    <p style="color:#555; font-size:13px; font-family:monospace; margin:0 0 16px;
+              background:#f8f3ff; padding:8px 12px; border-radius:6px; display:inline-block">
+        W(A<sub>i</sub>) = d'(A<sub>i</sub>) / Σ d'(A<sub>k</sub>)
+    </p>
 
-        <tr style="background:#faf8fd;font-weight:bold">
-
-            <td colspan="4" style="text-align:right">
-
-                Σ (Bobot × Normalisasi)
-
+    @if(!empty($cdDPrime) && !empty($cdCriteria) && !empty($cdWeights))
+    @php $totalDPrime = array_sum($cdDPrime); @endphp
+    <table>
+        <thead>
+            <tr style="background:#f3eef7">
+                <th>Kriteria</th>
+                <th style="text-align:right">d'(A<sub>i</sub>)</th>
+                <th style="text-align:center">Perhitungan</th>
+                <th style="text-align:right">W(A<sub>i</sub>)</th>
+                <th style="text-align:right">Persentase</th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach($cdCriteria as $i => $key)
+        @php
+            $dp = $cdDPrime[$i] ?? 0;
+            $w  = $cdWeights[$key] ?? ($totalDPrime > 0 ? $dp / $totalDPrime : 0);
+        @endphp
+        <tr>
+            <td><strong>{{ $namaKriteria[$key] ?? $key }}</strong></td>
+            <td style="text-align:right; font-family:monospace">{{ number_format($dp, 4) }}</td>
+            <td style="text-align:center; font-size:12px; color:#666; font-family:monospace">
+                {{ number_format($dp, 4) }} / {{ number_format($totalDPrime, 4) }}
             </td>
-
-            <td style="text-align:right;font-family:monospace">
-
-                {{ number_format($trace['score'] ?? 0,6) }}
-
+            <td style="text-align:right; font-family:monospace; font-weight:bold">
+                {{ number_format($w, 6) }}
             </td>
-
+            <td style="text-align:right; font-weight:bold; color:#6a3d8f">
+                {{ number_format($w * 100, 2) }}%
+            </td>
         </tr>
-
+        @endforeach
+        </tbody>
+        <tfoot>
+            <tr style="background:#f3eef7; font-weight:bold">
+                <td>Total</td>
+                <td style="text-align:right; font-family:monospace">
+                    {{ number_format($totalDPrime, 4) }}
+                </td>
+                <td></td>
+                <td style="text-align:right; font-family:monospace">
+                    {{ number_format(array_sum(array_values($cdWeights)), 6) }}
+                </td>
+                <td style="text-align:right; color:#155724">100,00% ✓</td>
+            </tr>
         </tfoot>
-
     </table>
 
-</div>
-<div style="
-    margin-top:18px;
-    background:#faf8fd;
-    border-left:4px solid #6f42c1;
-    padding:16px;
-    border-radius:6px;
-">
-
-    <div style="font-weight:bold;color:#6f42c1;margin-bottom:10px">
-        Rumus Perhitungan Nilai Preferensi
+    <div style="margin-top:12px; padding:8px 14px; background:#d4edda; border-radius:6px;
+                font-size:13px; color:#155724">
+        Verifikasi: Σ W(A<sub>i</sub>) =
+        @foreach($cdCriteria as $i => $key)
+            {{ number_format($cdWeights[$key] ?? 0, 4) }}{{ !$loop->last ? ' + ' : '' }}
+        @endforeach
+        = <strong>{{ number_format(array_sum(array_values($cdWeights)), 4) }}</strong>
+        &nbsp;✓ (harus = 1,0000)
     </div>
 
-    <div style="font-family:monospace;font-size:14px">
-
-        Score(P) = Σ (Wi × Xi)
-
-        <br><br>
-
-        =
-
-        ({{ number_format($bobot['kalori'],6) }}
-        ×
-        {{ number_format($normalized['kalori'],6) }})
-
-        +
-
-        ({{ number_format($bobot['karbohidrat'],6) }}
-        ×
-        {{ number_format($normalized['karbohidrat'],6) }})
-
-        +
-
-        ({{ number_format($bobot['protein'],6) }}
-        ×
-        {{ number_format($normalized['protein'],6) }})
-
-        +
-
-        ({{ number_format($bobot['serat'],6) }}
-        ×
-        {{ number_format($normalized['serat'],6) }})
-
-        <br><br>
-
-        =
-
-        <strong style="font-size:18px;color:#6f42c1">
-
-            {{ number_format($trace['score'],6) }}
-
-        </strong>
-
-    </div>
-
+    @else
+    {{-- TODO: $calculationDetails['d_prime'] atau ['weights'] tidak tersedia --}}
+    <p style="color:#999; font-style:italic; font-size:13px">
+        Data normalisasi bobot tidak tersedia.
+    </p>
+    @endif
 </div>
 
 {{-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ --}}
 {{-- SEKSI 7 — TIGA PAKET KANDIDAT                                       --}}
 {{-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ --}}
-
 <div class="card" style="border-left:4px solid #d79b00; margin-bottom:20px">
     <h3 style="margin:0 0 8px; color:#b37800">7. Tiga Paket Menu Harian Kandidat</h3>
     <p style="color:#666; font-size:13px; margin:0 0 20px">
