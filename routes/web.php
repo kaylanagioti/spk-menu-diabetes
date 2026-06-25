@@ -30,12 +30,18 @@ Route::prefix('admin')
     Route::resource('menu', MenuController::class)->except(['show']);
 
     // Kandungan Gizi
-    Route::get( '/gizi',           [KandunganGiziController::class, 'index'])  ->name('gizi.index');
+    Route::get( '/gizi',             [KandunganGiziController::class, 'index'])  ->name('gizi.index');
     Route::get( '/gizi/{menu}/edit', [KandunganGiziController::class, 'edit'])   ->name('gizi.edit');
-    Route::put( '/gizi/{menu}',    [KandunganGiziController::class, 'update']) ->name('gizi.update');
+    Route::put( '/gizi/{menu}',      [KandunganGiziController::class, 'update']) ->name('gizi.update');
 
+    // Riwayat Pemilihan Menu
     Route::get(
         '/riwayat-pemilihan',
         [RiwayatPemilihanController::class, 'index']
     )->name('riwayat.index');
+
+    Route::get(
+        '/riwayat-pemilihan/{pemilihan}',
+        [RiwayatPemilihanController::class, 'show']
+    )->name('riwayat.show');
 });

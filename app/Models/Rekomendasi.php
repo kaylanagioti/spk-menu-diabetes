@@ -33,6 +33,7 @@ class Rekomendasi extends Model
         'nilai_preferensi',
         'bobot_kriteria',
         'consistency_ratio',
+        'fahp_trace', 
     ];
 
     protected function casts(): array
@@ -45,6 +46,7 @@ class Rekomendasi extends Model
             'nilai_preferensi'        => 'decimal:6',
             'bobot_kriteria'          => 'array',
             'consistency_ratio'       => 'decimal:4',
+            'fahp_trace' => 'array',
         ];
     }
 

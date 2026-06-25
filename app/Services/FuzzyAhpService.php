@@ -118,12 +118,39 @@ class FuzzyAhpService
 
         foreach ($rawValues as $raw) {
             $normalized = $this->normalisasi($raw, $minMax);
-            $skor       = $this->hitungSkor($normalized, $weights);
+
+            $weighted = [];
+
+            foreach (self::CRITERIA as $key) {
+                $weighted[$key] =
+                    round(($weights[$key] ?? 0) * ($normalized[$key] ?? 0), 6);
+            }
+
+            $skor = array_sum($weighted);
 
             $results[] = [
-                'paket'          => $raw['paket'],
-                'skor'           => round($skor, 6),
+                'paket' => $raw['paket'],
+
+                'normalized' => $normalized,
+
+                'skor' => $skor,
+
                 'bobot_kriteria' => $weights,
+
+                'fahp_trace' => [
+                    'raw' => [
+                        'kalori' => $raw['kalori'],
+                        'karbohidrat' => $raw['karbohidrat'],
+                        'protein' => $raw['protein'],
+                        'serat' => $raw['serat'],
+                    ],
+
+                    'normalized' => $normalized,
+
+                    'weighted' => $weighted,
+
+                    'score' => $skor,
+                ]
             ];
         }
 
@@ -146,11 +173,41 @@ class FuzzyAhpService
      * Consistency Ratio — disimpan untuk audit admin, tidak ditampilkan ke parent.
      * Nilai valid: CR < 0.10
      */
-    public function getConsistencyRatio(): float
+        public function getConsistencyRatio(): float
     {
         return $this->hitungConsistencyRatio();
     }
 
+    public function getCalculationDetails(): array
+    {
+        $fuzzyMatrix = $this->buildFuzzyMatrix();
+
+        $syntheticExtent = $this->hitungSyntheticExtent($fuzzyMatrix);
+
+        $degree = $this->hitungDegreeMatrix($syntheticExtent);
+
+        $weights = $this->hitungBobot();
+
+        return [
+
+            'criteria' => self::CRITERIA,
+
+            'pairwise' => $this->pairwiseMatrix,
+
+            'fuzzy_matrix' => $fuzzyMatrix,
+
+            'synthetic_extent' => $syntheticExtent,
+
+            'degree_matrix' => $degree['matrix'],
+
+            'd_prime' => $degree['d_prime'],
+
+            'weights' => $weights,
+
+            'consistency_ratio' => $this->getConsistencyRatio(),
+        ];
+    }
+    
     // ══════════════════════════════════════════════════════════
     // LANGKAH 1 — FUZZY PAIRWISE MATRIX
     // ══════════════════════════════════════════════════════════
@@ -224,6 +281,40 @@ class FuzzyAhpService
         $denom = ($m1 - $u1) - ($m2 - $l2);
 
         return abs($denom) < 1e-10 ? 0.0 : ($l2 - $u1) / $denom;
+    }
+
+    private function hitungDegreeMatrix(array $Si): array
+    {
+        $n = count($Si);
+
+        $matrix = [];
+        $dPrime = [];
+
+        for ($i = 0; $i < $n; $i++) {
+
+            $min = PHP_FLOAT_MAX;
+
+            for ($j = 0; $j < $n; $j++) {
+
+                if ($i === $j) {
+                    $matrix[$i][$j] = '-';
+                    continue;
+                }
+
+                $v = $this->degreeOfPossibility($Si[$i], $Si[$j]);
+
+                $matrix[$i][$j] = round($v, 6);
+
+                $min = min($min, $v);
+            }
+
+            $dPrime[$i] = round(max($min, 0), 6);
+        }
+
+        return [
+            'matrix' => $matrix,
+            'd_prime' => $dPrime,
+        ];
     }
 
     // ══════════════════════════════════════════════════════════

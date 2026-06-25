@@ -102,6 +102,7 @@ class RekomendasiController extends Controller
                 'nilai_preferensi'        => $item['skor'],
                 'bobot_kriteria'          => $item['bobot_kriteria'],
                 'consistency_ratio'       => $cr,
+                'fahp_trace' => $item['fahp_trace'],
             ]);
 
             $rekomendasiIds[$item['ranking']] = $rekomendasi->id;
